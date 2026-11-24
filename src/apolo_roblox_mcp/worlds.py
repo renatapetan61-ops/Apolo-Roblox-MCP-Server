@@ -16,7 +16,7 @@ def build_world_manifest(root: Path, project: str, name: str, description: str,
     clean = []
     for index, obj in enumerate(objects):
         if not isinstance(obj, dict):
-            raise ValueError(f"Object {index} must be an object.")
+            raise TypeError(f"Object {index} must be an object.")
         kind = str(obj.get("class_name", "Part"))
         if kind not in _ALLOWED_PARTS:
             raise ValueError(f"Unsupported class_name: {kind}")
