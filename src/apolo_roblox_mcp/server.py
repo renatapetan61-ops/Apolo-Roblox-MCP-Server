@@ -22,7 +22,7 @@ from .build import build_place
 settings = Settings.from_env()
 mcp = FastMCP("APOLO Roblox MCP Server")
 _selected_mode = settings.default_integration
-_publish_candidates: dict[str, dict] = {}
+_publish_candidates: dict[str, dict] = {}\n_luau_tasks: dict[str, dict] = {}
 
 CAPABILITIES = {
     "studio_compat": [
@@ -30,7 +30,7 @@ CAPABILITIES = {
         "world.manifest", "ui.spec", "project.package",
     ],
     "open_cloud": [
-        "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.asset.operations",
+        "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.asset.operations",
         "cloud.datastores",
     ],
 }
@@ -75,7 +75,7 @@ def apolo_list_capabilities() -> dict:
             "server.info", "integration.select", "project.scaffold",
             "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",
             "asset.library", "luau.validate", "game.plan", "project.build",
-            "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status",
+            "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status",
         ],
         "planned": {
             "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
@@ -312,6 +312,56 @@ def apolo_build_place(project: str, output_name: str = "place.rbxlx") -> dict:
     if _selected_mode != "studio_compat":
         raise RuntimeError("Select studio_compat before building a local project.")
     return build_place(settings.workspace, project, output_name)
+
+
+@mcp.tool()
+def apolo_execute_luau(universe_id: str, place_id: str, script: str,
+                       confirm_live_execution: bool = False,
+                       timeout_seconds: int = 300) -> dict:
+    """Run Luau headlessly in a Roblox place via Open Cloud. Requires explicit opt-in and execution scopes."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before executing Roblox Luau.")
+    if not confirm_live_execution or os.getenv("APOLO_ALLOW_LUAU_EXECUTION", "false").lower() != "true":
+        raise PermissionError("Cloud Luau execution is disabled. Set APOLO_ALLOW_LUAU_EXECUTION=true and explicitly confirm this invocation.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    result = OpenCloudClient(settings.roblox_api_key).create_luau_task(
+        universe_id, place_id, script, timeout_seconds
+    )
+    resource = result.get("response", {}).get("path")
+    if not resource:
+        return {"accepted": False, "roblox": result}
+    task_id = resource.rsplit("/", 1)[-1]
+    _luau_tasks[task_id] = {"path": resource, "universe_id": universe_id, "place_id": place_id}
+    return {"accepted": True, "task_id": task_id, "resource_path": resource,
+            "roblox": result,
+            "warning": "Task runs against a Roblox place version. DataModel edits are not automatically persisted; cloud services called by the script may affect real data."}
+
+
+@mcp.tool()
+def apolo_get_luau_task(task_id: str) -> dict:
+    """Get state and return values for a previously submitted headless Luau task."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before querying Roblox Luau tasks.")
+    task = _luau_tasks.get(task_id)
+    if task is None:
+        raise ValueError("Unknown task ID in this MCP server process.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    return OpenCloudClient(settings.roblox_api_key).get_luau_task(task["path"])
+
+
+@mcp.tool()
+def apolo_get_luau_task_logs(task_id: str) -> dict:
+    """Retrieve print output and structured logs for a previously submitted Luau task."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before querying Roblox Luau logs.")
+    task = _luau_tasks.get(task_id)
+    if task is None:
+        raise ValueError("Unknown task ID in this MCP server process.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    return OpenCloudClient(settings.roblox_api_key).get_luau_task_logs(task["path"])
 
 def main() -> None:
     transport = os.getenv("APOLO_MCP_TRANSPORT", "stdio")
