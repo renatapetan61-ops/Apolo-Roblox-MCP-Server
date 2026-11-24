@@ -30,3 +30,10 @@ Direct publication through the MCP tool is disabled by default. The safer recomm
 - Source files must be inside the configured project workspace. Uploads are limited to one file up to 20 MiB and the API-supported extensions documented by Roblox.
 - Use a least-privilege API key with asset write permissions. Poll the returned operation and do not assume an asset is ready until Roblox reports `done=true` and returns the asset result.
 - Uploading an asset is not the same as adding it to a game, publishing an experience, or generating a new asset with AI.
+
+## DataStore write safety
+
+- DataStore listing and reads require the corresponding least-privilege `universe-datastores` scopes.
+- Updating an existing entry is disabled unless `APOLO_ALLOW_DATASTORE_WRITES=true` and the individual MCP call includes `confirm_update=true`.
+- DataStores can contain player profiles, inventories and virtual currency. Test against a dedicated test universe and never run unreviewed writes against production player data.
+- Create and delete operations are not exposed by this implementation.
