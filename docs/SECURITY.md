@@ -37,3 +37,10 @@ Direct publication through the MCP tool is disabled by default. The safer recomm
 - Updating an existing entry is disabled unless `APOLO_ALLOW_DATASTORE_WRITES=true` and the individual MCP call includes `confirm_update=true`.
 - DataStores can contain player profiles, inventories and virtual currency. Test against a dedicated test universe and never run unreviewed writes against production player data.
 - Create and delete operations are not exposed by this implementation.
+
+## AI image generation
+
+- Image generation is disabled unless `APOLO_ALLOW_IMAGE_GENERATION=true` and each MCP call includes `confirm_generation=true`.
+- `OPENAI_API_KEY` is stored only in the server environment. Never commit it or return it in tool output.
+- Generation can incur provider charges. Review current model pricing and inspect the returned usage metadata before scaling up.
+- Generated images are saved locally and are not uploaded to Roblox automatically. Upload requires a separate confirmation and opt-in.
