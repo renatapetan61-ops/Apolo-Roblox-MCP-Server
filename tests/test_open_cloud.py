@@ -119,3 +119,34 @@ def test_asset_upload_rejects_unsupported_type_and_creator(tmp_path: Path):
         client.create_asset("Mesh", asset, "Mesh", "", "user", "123")
     with pytest.raises(ValueError):
         client.create_asset("Image", asset, "Image", "", "user", "not-numeric")
+
+
+def test_datastore_read_and_update_endpoints(monkeypatch):
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        calls.append((request.method, request.full_url, request.data, dict(request.header_items())))
+        return FakeResponse(b'{"value":{"coins":12}}')
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    client = OpenCloudClient("test-key")
+    client.list_data_stores("123", max_page_size=25)
+    client.list_datastore_entries("123", "Player Data", scope_id="global")
+    client.get_datastore_entry("123", "Player Data", "user/42", scope_id="global")
+    client.update_datastore_entry("123", "Player Data", "user/42", {"coins": 15}, scope_id="global")
+
+    assert calls[0][0] == "GET"
+    assert calls[0][1].endswith("/universes/123/data-stores?maxPageSize=25")
+    assert "/data-stores/Player%20Data/scopes/global/entries?" in calls[1][1]
+    assert "/entries/user%2F42" in calls[2][1]
+    assert calls[3][0] == "PATCH"
+    assert json.loads(calls[3][2]) == {"value": {"coins": 15}}
+    assert calls[3][3]["Content-type"] == "application/json"
+
+
+def test_datastore_rejects_bad_ids_and_non_json_values():
+    client = OpenCloudClient("test-key")
+    with pytest.raises(ValueError):
+        client.list_data_stores("not-numeric")
+    with pytest.raises(ValueError):
+        client.update_datastore_entry("123", "Inventory", "key", {"bad": float("nan")})
