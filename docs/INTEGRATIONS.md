@@ -44,3 +44,22 @@ APOLO produces the package, manifest, hashes, validation report and exact handof
 APOLO prepares a release candidate. The user approves the exact experience ID, place ID, artifact hash, version and target. Only then may GitHub Actions call the Open Cloud publishing adapter. Approval must be bound to that immutable release candidate; any changed artifact requires new approval.
 
 No default auto-publish. No publishing from untrusted pull requests. Use protected GitHub environments and required reviewers for production secrets.
+
+## 3. Headless Roblox Luau Execution (Open Cloud)
+
+Roblox now provides a stable Open Cloud Luau Execution API. APOLO exposes it through:
+
+- `apolo_execute_luau` — submit a script to a Roblox place task.
+- `apolo_get_luau_task` — retrieve task state and return values.
+- `apolo_get_luau_task_logs` — retrieve print output.
+
+Required key scopes: `universe.place.luau-execution-session:write` to create tasks and the corresponding read scope to inspect tasks/logs. Enable `APOLO_ALLOW_LUAU_EXECUTION=true` only in a controlled environment and set `confirm_live_execution=true` for each call.
+
+Important engine constraints from Roblox:
+- A task runs against a specific place version and can run up to five minutes.
+- Physics simulation does not run; server and LocalScripts in the place do not automatically run.
+- DataModel edits are local to the task and are not automatically persisted.
+- Luau scripts can still call cloud services such as DataStores, so treat execution as privileged and test with a non-production universe.
+- Maximum ten incomplete tasks per place; Roblox rate limits task creation.
+
+This gives APOLO a genuine Studio-free engine execution path for scripted checks and procedural analysis. It does not replace full interactive playtesting or guarantee that a live multiplayer session behaves correctly.
