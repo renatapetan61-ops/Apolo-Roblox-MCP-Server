@@ -40,6 +40,7 @@ jobs:
           UNIVERSE_ID: ${{ inputs.universe_id }}
           PLACE_ID: ${{ inputs.place_id }}
         run: |
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "Dispatch this workflow from main only"; exit 1; }
           [[ "$RUN_ID" =~ ^[0-9]+$ ]]
           [[ "$UNIVERSE_ID" =~ ^[0-9]+$ ]]
           [[ "$PLACE_ID" =~ ^[0-9]+$ ]]
@@ -51,6 +52,8 @@ jobs:
           RUN_ID: ${{ inputs.artifact_run_id }}
           ARTIFACT_NAME: ${{ inputs.artifact_name }}
         run: |
+          CONCLUSION="$(gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)"
+          test "$CONCLUSION" = "success" || { echo "Source workflow run must have conclusion=success"; exit 1; }
           mkdir -p artifacts
           gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir artifacts
           mapfile -t files < <(find artifacts -type f \( -name '*.rbxl' -o -name '*.rbxlx' \))
@@ -72,6 +75,9 @@ jobs:
           PLACE_ID: ${{ inputs.place_id }}
         run: |
           test -n "$ROBLOX_API_KEY"
+          curl --fail-with-body --silent --show-error \
+            "https://apis.roblox.com/cloud/v2/universes/${{ inputs.universe_id }}/places/$PLACE_ID" \
+            -H "x-api-key: $ROBLOX_API_KEY" > place-metadata.json
           if [[ "$PLACE_ID" =~ ^[0-9]+$ ]] && file approved-place | grep -q XML; then
             MIME="application/xml"
           else
