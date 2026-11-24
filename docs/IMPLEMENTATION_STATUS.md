@@ -13,7 +13,7 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 | Asset catalog/import/export | Implemented | Local user-provided files; no generative provider included |
 | Luau static validation | Partial | Uses installed Luau CLI; explicitly reports skipped if absent |
 | Open Cloud place metadata | Implemented adapter, live test pending | Stable Get Place endpoint; requires read scope |
-| Headless Open Cloud Luau execution | Implemented adapter, live test pending | Create task, inspect task and logs; gated by environment opt-in; engine constraints apply |
+| Headless Open Cloud Luau execution | Implemented adapter, live test pending | Create task, validate Roblox task resource paths, inspect task and logs; gated by environment opt-in |\n| Game test executor | Initial implementation | Declarative checks for instance existence, class, child count, property and attribute; runs through Luau Execution and normalizes pass/fail results; live test pending |
 | Open Cloud place publishing | Initial current Assets API adapter | Multipart Update Asset, async operation polling; requires asset read/write permission and valid .rbxl/.rbxlx; not tested against live Roblox |
 | Open Cloud metadata / DataStores / asset APIs | Pending | Need endpoint-specific tests and permission mapping |
 | Thumbnails / icons / models / audio / animations generation | Pending provider adapters | Requires user-selected provider credentials |
@@ -22,4 +22,4 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 
 ## Current limitation
 
-The headless mode can generate source/specifications. Rojo build is now available as an adapter and reports blocked when Rojo is absent. Open Cloud Luau Execution now provides headless engine-context script tasks, but it does not simulate physics or automatically run server/client scripts; DataModel edits are not automatically persisted. The UI/world generators are starter implementations, not a full visual editor or terrain engine. Asset generation still requires provider adapters and credentials.
+The headless mode can generate source/specifications. Rojo build is now available as an adapter and reports blocked when Rojo is absent. Open Cloud Luau Execution now provides headless engine-context script tasks and an initial declarative game-test executor. Test tasks still require a published place and configured API scopes. They do not simulate physics or automatically run server/client scripts; DataModel edits are not automatically persisted. The UI/world generators are starter implementations, not a full visual editor or terrain engine. Asset generation still requires provider adapters and credentials.
