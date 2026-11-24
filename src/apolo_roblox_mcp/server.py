@@ -48,7 +48,7 @@ def _persist_luau_task(task_id: str, record: dict) -> None:
         _luau_tasks[task_id] = record
         _TASK_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
         temporary = _TASK_REGISTRY.with_suffix(".tmp")
-        temporary.write_text(json.dumps(_luau_tasks, indent=2) + "\\n", encoding="utf-8")
+        temporary.write_text(json.dumps(_luau_tasks, indent=2) + "\n", encoding="utf-8")
         os.replace(temporary, _TASK_REGISTRY)
 
 
