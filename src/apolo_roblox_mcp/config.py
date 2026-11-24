@@ -14,7 +14,7 @@ class Settings:
     place_id: str | None
 
     @classmethod
-    def from_env(cls) -> "Settings":
+    def from_env(cls) -> Settings:
         mode = os.getenv("APOLO_DEFAULT_INTEGRATION", "studio_compat")
         if mode not in {"studio_compat", "open_cloud"}:
             mode = "studio_compat"
