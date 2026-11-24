@@ -1,5 +1,6 @@
-from apolo_roblox_mcp.test_runner import build_game_test_script, summarize_task
 import pytest
+
+from apolo_roblox_mcp.test_runner import build_game_test_script, summarize_task
 
 
 def test_builds_safe_game_test_harness():
