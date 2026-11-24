@@ -100,9 +100,9 @@ def build_game_test_script(tests: list[dict[str, Any]]) -> str:
                 f"local ok_{index + 1}, value_{index + 1} = pcall(function()",
                 f"    return {variable} and {variable}[{_lua(prop)}]",
                 "end)",
-                f"record({id_lua}, ok_{index + 1} and {variable} ~= nil "
-                f"and value_{index + 1} == {expected_lua}, "
-                f"{_lua('Expected property ' + prop + ' at ' + spec['path'])})",
+                (f"record({id_lua}, ok_{index + 1} and {variable} ~= nil "
+                 f"and value_{index + 1} == {expected_lua}, "
+                 f"{_lua('Expected property ' + prop + ' at ' + spec['path'])})"),
             ])
         elif kind == "attribute_equals":
             attr = spec.get("attribute")
@@ -116,8 +116,8 @@ def build_game_test_script(tests: list[dict[str, Any]]) -> str:
             )
 
     lines.extend([
-        "return { total = #results, passed = passed, failed = failed, "
-        "success = failed == 0, results = results }",
+        ("return { total = #results, passed = passed, failed = failed, "
+         "success = failed == 0, results = results }"),
     ])
     script = "\n".join(lines)
     if len(script.encode("utf-8")) > 4 * 1024 * 1024:
