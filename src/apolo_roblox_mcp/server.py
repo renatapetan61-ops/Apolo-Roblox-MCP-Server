@@ -457,7 +457,7 @@ def apolo_generate_image_asset(project: str, prompt: str, filename: str,
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not configured.")
-    if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}\\.png", filename):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}\.png", filename):
         raise ValueError("filename must be a simple PNG filename (letters, numbers, underscore or hyphen).")
     project_root = _project_path(project)
     destination = safe_path(project_root, f"assets/ai_generated/{filename}")
