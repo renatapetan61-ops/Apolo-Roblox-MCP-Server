@@ -102,10 +102,10 @@ class OpenCloudClient:
         import re
 
         patterns = (
-            r"^universes/\\d+/places/\\d+/luau-execution-session-tasks/[A-Za-z0-9_-]+$",
-            r"^universes/\\d+/places/\\d+/versions/\\d+/luau-execution-session-tasks/[A-Za-z0-9_-]+$",
-            r"^universes/\\d+/places/\\d+/luau-execution-sessions/[A-Za-z0-9_-]+/tasks/[A-Za-z0-9_-]+$",
-            r"^universes/\\d+/places/\\d+/versions/\\d+/luau-execution-sessions/[A-Za-z0-9_-]+/tasks/[A-Za-z0-9_-]+$",
+            r"^universes/\d+/places/\d+/luau-execution-session-tasks/[A-Za-z0-9_-]+$",
+            r"^universes/\d+/places/\d+/versions/\d+/luau-execution-session-tasks/[A-Za-z0-9_-]+$",
+            r"^universes/\d+/places/\d+/luau-execution-sessions/[A-Za-z0-9_-]+/tasks/[A-Za-z0-9_-]+$",
+            r"^universes/\d+/places/\d+/versions/\d+/luau-execution-sessions/[A-Za-z0-9_-]+/tasks/[A-Za-z0-9_-]+$",
         )
         if not isinstance(task_path, str) or not any(re.fullmatch(p, task_path) for p in patterns):
             raise ValueError("Invalid Roblox Luau task resource path.")
