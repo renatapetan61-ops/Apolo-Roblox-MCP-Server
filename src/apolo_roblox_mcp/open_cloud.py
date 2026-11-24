@@ -95,15 +95,27 @@ class OpenCloudClient:
         body = json.dumps({"script": script, "timeout": f"{timeout_seconds}s"}).encode()
         return self._request("POST", url, body, {"Content-Type": "application/json"})
 
-    def get_luau_task(self, task_path: str) -> dict:
-        # Use only the resource path returned by Roblox; never accept a caller-supplied URL.
-        if not task_path.startswith("universes/") or "://" in task_path or ".." in task_path:
+    @staticmethod
+    def _validate_luau_task_path(task_path: str) -> None:
+        # Roblox documents four resource path forms. Accept only those exact shapes;
+        # never accept a URL, query, fragment, traversal or arbitrary API path.
+        import re
+
+        patterns = (
+            r"^universes/\\d+/places/\\d+/luau-execution-session-tasks/[A-Za-z0-9_-]+$",
+            r"^universes/\\d+/places/\\d+/versions/\\d+/luau-execution-session-tasks/[A-Za-z0-9_-]+$",
+            r"^universes/\\d+/places/\\d+/luau-execution-sessions/[A-Za-z0-9_-]+/tasks/[A-Za-z0-9_-]+$",
+            r"^universes/\\d+/places/\\d+/versions/\\d+/luau-execution-sessions/[A-Za-z0-9_-]+/tasks/[A-Za-z0-9_-]+$",
+        )
+        if not isinstance(task_path, str) or not any(re.fullmatch(p, task_path) for p in patterns):
             raise ValueError("Invalid Roblox Luau task resource path.")
+
+    def get_luau_task(self, task_path: str) -> dict:
+        self._validate_luau_task_path(task_path)
         return self._request("GET", "https://apis.roblox.com/cloud/v2/" + task_path)
 
     def get_luau_task_logs(self, task_path: str) -> dict:
-        if not task_path.startswith("universes/") or "://" in task_path or ".." in task_path:
-            raise ValueError("Invalid Roblox Luau task resource path.")
+        self._validate_luau_task_path(task_path)
         return self._request("GET", "https://apis.roblox.com/cloud/v2/" + task_path + "/logs")
 
     def get_operation(self, operation_id: str) -> dict:
