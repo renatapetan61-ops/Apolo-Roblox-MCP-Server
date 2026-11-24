@@ -113,10 +113,12 @@ def apolo_list_capabilities() -> dict:
             "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results", "cloud.world.materialize",
             "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
             "cloud.asset.upload", "cloud.asset.operation_status",
+            "cloud.datastore.list", "cloud.datastore.entries.list",
+            "cloud.datastore.entries.read", "cloud.datastore.entries.update",
         ],
         "planned": {
             "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
-            "open_cloud": ["datastores", "asset.metadata_and_versions"],
+            "open_cloud": ["datastore.create_delete", "asset.metadata_and_versions"],
             "assets": ["thumbnail", "icon", "gui", "hud", "avatar", "model3d",
                        "clothing", "music", "sound_effect", "r15_animation", "asset_library"],
         },
@@ -434,6 +436,64 @@ def apolo_run_game_tests(universe_id: str, place_id: str, tests: list[dict],
         "next_step": "Call apolo_get_game_test_results with this task_id until outcome is passed or failed.",
         "warning": "Tests execute against the selected published place version. Avoid destructive DataStore writes; use a dedicated test universe.",
     }
+
+
+@mcp.tool()
+def apolo_list_data_stores(universe_id: str, max_page_size: int = 100,
+                           page_token: str | None = None) -> dict:
+    """List standard Roblox DataStores in a universe; requires universe-datastores.control:list."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before querying DataStores.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    return OpenCloudClient(settings.roblox_api_key).list_data_stores(
+        universe_id, max_page_size, page_token
+    )
+
+
+@mcp.tool()
+def apolo_list_datastore_entries(universe_id: str, data_store_id: str,
+                                 scope_id: str | None = None,
+                                 max_page_size: int = 100,
+                                 page_token: str | None = None) -> dict:
+    """List entries in a standard DataStore; requires universe-datastores.objects:list."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before querying DataStore entries.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    return OpenCloudClient(settings.roblox_api_key).list_datastore_entries(
+        universe_id, data_store_id, scope_id, max_page_size, page_token
+    )
+
+
+@mcp.tool()
+def apolo_get_datastore_entry(universe_id: str, data_store_id: str,
+                              entry_id: str, scope_id: str | None = None) -> dict:
+    """Read one DataStore entry; requires universe-datastores.objects:read."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before reading DataStore entries.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    return OpenCloudClient(settings.roblox_api_key).get_datastore_entry(
+        universe_id, data_store_id, entry_id, scope_id
+    )
+
+
+@mcp.tool()
+def apolo_update_datastore_entry(universe_id: str, data_store_id: str,
+                                 entry_id: str, value: dict | list | str | int | float | bool,
+                                 scope_id: str | None = None,
+                                 confirm_update: bool = False) -> dict:
+    """Update an existing DataStore entry; explicit confirmation and environment opt-in are required."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before updating DataStore entries.")
+    if not confirm_update or os.getenv("APOLO_ALLOW_DATASTORE_WRITES", "false").lower() != "true":
+        raise PermissionError("DataStore writes are disabled. Set APOLO_ALLOW_DATASTORE_WRITES=true and explicitly confirm this update.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    return OpenCloudClient(settings.roblox_api_key).update_datastore_entry(
+        universe_id, data_store_id, entry_id, value, scope_id
+    )
 
 
 @mcp.tool()
