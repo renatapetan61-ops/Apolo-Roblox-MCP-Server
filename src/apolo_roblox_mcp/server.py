@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import threading
 import time
 import uuid
@@ -16,6 +17,7 @@ from .agents import plan_game
 from .assets import export_assets, import_asset, list_assets
 from .build import build_place
 from .config import Settings
+from .image_provider import generate_image_asset
 from .luau import validate_luau
 from .open_cloud import OpenCloudClient
 from .test_runner import build_game_test_script, summarize_task
@@ -60,6 +62,7 @@ CAPABILITIES = {
         "project.scaffold", "project.inspect", "luau.write", "luau.validate", "project.build",
         "world.manifest", "ui.spec", "project.package",
         "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
+        "assets.ai.image.generate",
     ],
     "open_cloud": [
         "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status",
@@ -112,6 +115,8 @@ def apolo_list_capabilities() -> dict:
             "asset.library", "luau.validate", "game.plan", "project.build",
             "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results", "cloud.world.materialize",
             "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
+            "assets.ai.image.generate",
+            "assets.ai.image.generate",
             "cloud.asset.upload", "cloud.asset.operation_status",
             "cloud.datastore.list", "cloud.datastore.entries.list",
             "cloud.datastore.entries.read", "cloud.datastore.entries.update",
@@ -436,6 +441,27 @@ def apolo_run_game_tests(universe_id: str, place_id: str, tests: list[dict],
         "next_step": "Call apolo_get_game_test_results with this task_id until outcome is passed or failed.",
         "warning": "Tests execute against the selected published place version. Avoid destructive DataStore writes; use a dedicated test universe.",
     }
+
+
+@mcp.tool()
+def apolo_generate_image_asset(project: str, prompt: str, filename: str,
+                               model: str = "gpt-image-2.6-sunburst",
+                               size: str = "1024x1024",
+                               quality: str = "medium",
+                               confirm_generation: bool = False) -> dict:
+    """Generate a PNG game asset with OpenAI Images API and save it inside the project workspace."""
+    if not confirm_generation or os.getenv("APOLO_ALLOW_IMAGE_GENERATION", "false").lower() != "true":
+        raise PermissionError("Image generation is disabled. Set APOLO_ALLOW_IMAGE_GENERATION=true and explicitly confirm this generation.")
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not configured.")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}\\.png", filename):
+        raise ValueError("filename must be a simple PNG filename (letters, numbers, underscore or hyphen).")
+    project_root = _project_path(project)
+    destination = safe_path(project_root, f"assets/ai_generated/{filename}")
+    result = generate_image_asset(api_key, prompt, destination, model, size, quality)
+    result["path"] = str(destination.relative_to(project_root))
+    return result
 
 
 @mcp.tool()
