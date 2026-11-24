@@ -22,7 +22,7 @@ The AI client (Claude Code, OpenCode, Codex or another MCP client) selects a mod
 - Automated CI checks, package artifacts and release records
 - MCP tools usable from Claude Code, OpenCode and Codex
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/FEATURES.md](docs/FEATURES.md), [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md), [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md), [docs/FORGEGUI_PARITY.md](docs/FORGEGUI_PARITY.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/WORLD_MATERIALIZATION.md](docs/WORLD_MATERIALIZATION.md), and [docs/ROADMAP.md](docs/ROADMAP.md).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/FEATURES.md](docs/FEATURES.md), [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md), [docs/CLIENT_SETUP.md](docs/CLIENT_SETUP.md), [docs/FORGEGUI_PARITY.md](docs/FORGEGUI_PARITY.md), [docs/SECURITY.md](docs/SECURITY.md), [docs/WORLD_MATERIALIZATION.md](docs/WORLD_MATERIALIZATION.md), [docs/MULTIAGENT_RUNTIME.md](docs/MULTIAGENT_RUNTIME.md), and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Important limits
 
