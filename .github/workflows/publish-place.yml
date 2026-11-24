@@ -1,0 +1,58 @@
+name: Publish Roblox Place (approval required)
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_url:
+        description: HTTPS URL to the reviewed .rbxl or .rbxlx artifact
+        required: true
+        type: string
+      universe_id:
+        description: Roblox Universe ID
+        required: true
+        type: string
+      place_id:
+        description: Roblox Place ID
+        required: true
+        type: string
+      release_sha256:
+        description: SHA-256 of the exact approved artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: roblox-production
+    steps:
+      - name: Validate release approval inputs
+        env:
+          ARTIFACT_URL: ${{ inputs.artifact_url }}
+          EXPECTED_SHA256: ${{ inputs.release_sha256 }}
+        run: |
+          case "$ARTIFACT_URL" in https://*) ;; *) echo "Only HTTPS artifact URLs are allowed"; exit 1;; esac
+          echo "$EXPECTED_SHA256" | grep -Eq '^[a-fA-F0-9]{64}$'
+      - name: Download approved place
+        env:
+          ARTIFACT_URL: ${{ inputs.artifact_url }}
+        run: |
+          curl --fail --location --proto '=https' --tlsv1.2 "$ARTIFACT_URL" -o place-file
+          file place-file
+      - name: Verify approved hash
+        env:
+          EXPECTED_SHA256: ${{ inputs.release_sha256 }}
+        run: echo "$EXPECTED_SHA256  place-file" | sha256sum --check
+      - name: Publish approved place
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          UNIVERSE_ID: ${{ inputs.universe_id }}
+          PLACE_ID: ${{ inputs.place_id }}
+        run: |
+          test -n "$ROBLOX_API_KEY"
+          case "$PLACE_ID:$UNIVERSE_ID" in *[!0-9:]*|'') echo "Invalid Roblox IDs"; exit 1;; esac
+          case "$(file -b place-file)" in *XML*) CONTENT_TYPE="application/xml";;
+            *) CONTENT_TYPE="application/octet-stream";; esac
+          curl --fail-with-body --location             "https://apis.roblox.com/universes/v1/$UNIVERSE_ID/places/$PLACE_ID/versions?versionType=Published"             -H "x-api-key: $ROBLOX_API_KEY"             -H "Content-Type: $CONTENT_TYPE"             --data-binary @place-file
