@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from apolo_roblox_mcp.open_cloud import OpenCloudClient
@@ -6,6 +7,9 @@ from apolo_roblox_mcp.open_cloud import OpenCloudClient
 class FakeResponse:
     status = 200
 
+    def __init__(self, body=None):
+        self.body = body or b'{"path":"universes/123/places/456/versions/7/luau-execution-sessions/session-8/tasks/task-9","state":"QUEUED"}'
+
     def __enter__(self):
         return self
 
@@ -13,7 +17,7 @@ class FakeResponse:
         return False
 
     def read(self):
-        return b'{"path":"universes/123/places/456/versions/7/luau-execution-sessions/session-8/tasks/task-9","state":"QUEUED"}'
+        return self.body
 
 
 def test_publish_uses_current_assets_api(monkeypatch, tmp_path: Path):
@@ -26,7 +30,7 @@ def test_publish_uses_current_assets_api(monkeypatch, tmp_path: Path):
         captured["method"] = request.method
         captured["headers"] = dict(request.header_items())
         captured["body"] = request.data
-        return FakeResponse()
+        return FakeResponse(b'{"path":"operations/op-123"}')
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     result = OpenCloudClient("test-key").publish_place("123", "456", place)
@@ -35,7 +39,7 @@ def test_publish_uses_current_assets_api(monkeypatch, tmp_path: Path):
     assert b'"assetType":"Place"' in captured["body"]
     assert b'"published":true' in captured["body"]
     assert b"<roblox/>" in captured["body"]
-    assert result["response"]["path"] == "universes/123/places/456/versions/7/luau-execution-sessions/session-8/tasks/task-9"
+    assert result["response"]["path"] == "operations/op-123"
 
 
 def test_create_luau_task_uses_headless_open_cloud(monkeypatch):
@@ -52,7 +56,7 @@ def test_create_luau_task_uses_headless_open_cloud(monkeypatch):
     assert captured["url"].endswith("/universes/123/places/456/luau-execution-session-tasks")
     assert captured["method"] == "POST"
     assert json.loads(captured["body"]) == {"script": "return 42", "timeout": "60s"}
-    assert result["response"]["path"] == "operations/op-123"
+    assert result["response"]["path"] == "universes/123/places/456/versions/7/luau-execution-sessions/session-8/tasks/task-9"
 
 def test_luau_task_get_and_logs_use_roblox_resource_path(monkeypatch):
     calls = []
