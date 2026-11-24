@@ -172,6 +172,8 @@ def apolo_publish_approved(candidate_id: str, approval_phrase: str) -> dict:
     """Submit a prepared place for publishing after exact release-specific user approval."""
     if _selected_mode != "open_cloud":
         raise RuntimeError("Select open_cloud before publishing.")
+    if os.getenv("APOLO_ALLOW_DIRECT_PUBLISH", "false").lower() != "true":
+        raise PermissionError("Direct MCP publishing is disabled by default. Use the protected GitHub Actions roblox-production environment for a human-reviewed release.")
     candidate = _publish_candidates.get(candidate_id)
     if candidate is None:
         raise ValueError("Unknown or expired release candidate. Prepare it again.")
