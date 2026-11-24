@@ -16,7 +16,7 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 | Headless Open Cloud Luau execution | Implemented adapter, live test pending | Create task, validate Roblox task resource paths, inspect task and logs; gated by environment opt-in |
 | Game test executor | Initial implementation, CI unit tests passing | Declarative checks for instance existence, class, child count, property and attribute; live Roblox test pending |
 | Open Cloud place publishing | Initial current Assets API adapter | Multipart Update Asset, async operation polling; requires asset read/write permission and valid .rbxl/.rbxlx; not tested against live Roblox |
-| Open Cloud asset upload | Initial adapter, live test pending | Multipart upload for Images, Decals, Models, Audio, Animation and Video; 20 MiB limit, explicit confirmation and async operation polling |
+| Open Cloud asset upload | Initial adapter, live test pending | Multipart upload for Images, Decals, Models, Audio and Animation; 20 MiB limit, explicit confirmation and async operation polling |
 | Open Cloud DataStores | Initial read/update adapters, live test pending | List stores, list entries, read entries and update existing entries; write requires explicit opt-in; create/delete remain pending |
 | Thumbnails / icons / models / audio / animations generation | Pending provider adapters | Requires user-selected provider credentials |
 | Multi-agent orchestration | Initial persistent runtime | SQLite task DAG, specialist roles, dependency handoffs, worker leases and retry handling; connected MCP clients are the workers, no model spawning yet |
