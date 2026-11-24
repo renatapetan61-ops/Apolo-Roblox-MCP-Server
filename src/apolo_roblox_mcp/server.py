@@ -509,7 +509,7 @@ def apolo_get_datastore_entry(universe_id: str, data_store_id: str,
 
 @mcp.tool()
 def apolo_update_datastore_entry(universe_id: str, data_store_id: str,
-                                 entry_id: str, value: dict | list | str | int | float | bool,
+                                 entry_id: str, value: dict | list | str | float | bool,
                                  scope_id: str | None = None,
                                  confirm_update: bool = False) -> dict:
     """Update an existing DataStore entry; explicit confirmation and environment opt-in are required."""
