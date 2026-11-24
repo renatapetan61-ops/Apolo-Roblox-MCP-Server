@@ -66,7 +66,7 @@ class OpenCloudClient:
             "assetId": int(place_id), "assetType": "Place", "published": True
         }, separators=(",", ":"))
         file_bytes = place_file.read_bytes()
-        filename = place_file.name.replace('"', "").replace("\\r", "").replace("\\n", "")
+        filename = place_file.name.replace('"', "").replace("\r", "").replace("\n", "")
         body = (
             f"--{boundary}\r\n"
             'Content-Disposition: form-data; name="request"\r\n'
