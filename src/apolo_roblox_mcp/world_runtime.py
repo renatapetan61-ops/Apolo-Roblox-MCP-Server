@@ -57,7 +57,7 @@ def build_world_materialization_script(
     """Create a bounded, injection-safe Luau scene builder for Open Cloud execution."""
     if not isinstance(objects, list) or len(objects) > 300:
         raise WorldMaterializationError("Provide at most 300 world objects.")
-    terrain_blocks = terrain_blocks or []
+    terrain_blocks = [] if terrain_blocks is None else terrain_blocks
     if not isinstance(terrain_blocks, list) or len(terrain_blocks) > 100:
         raise WorldMaterializationError("Provide at most 100 terrain blocks.")
     if not isinstance(save_place, bool):
@@ -69,10 +69,10 @@ def build_world_materialization_script(
         if not isinstance(item, dict):
             raise WorldMaterializationError(f"Object #{index + 1} must be an object.")
         class_name = item.get("class_name", "Part")
-        if class_name not in _ALLOWED_PARTS:
+        if not isinstance(class_name, str) or class_name not in _ALLOWED_PARTS:
             raise WorldMaterializationError(f"Unsupported Roblox part class: {class_name!r}")
         material = item.get("material", "Plastic")
-        if material not in _ALLOWED_MATERIALS:
+        if not isinstance(material, str) or material not in _ALLOWED_MATERIALS:
             raise WorldMaterializationError(f"Unsupported material: {material!r}")
         color = item.get("color", "#808080")
         if not isinstance(color, str) or not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
@@ -104,7 +104,7 @@ def build_world_materialization_script(
         if not isinstance(item, dict):
             raise WorldMaterializationError(f"Terrain block #{index + 1} must be an object.")
         material = item.get("material", "Grass")
-        if material not in _ALLOWED_MATERIALS:
+        if not isinstance(material, str) or material not in _ALLOWED_MATERIALS:
             raise WorldMaterializationError(f"Unsupported terrain material: {material!r}")
         normalized_terrain.append({
             "position": _vector(item.get("position", [0, 0, 0]), "terrain position", -100000, 100000),
@@ -112,7 +112,7 @@ def build_world_materialization_script(
             "material": material,
         })
 
-    lighting = lighting or {}
+    lighting = {} if lighting is None else lighting
     if not isinstance(lighting, dict):
         raise WorldMaterializationError("lighting must be an object.")
     clock_time = _number(lighting.get("clock_time", 14), "clock_time", 0, 24)
@@ -184,7 +184,7 @@ def build_world_materialization_script(
         )
 
     lines.extend([
-        "local saveAttempted = " + str(save_place).lower(),
+        f"local saveAttempted = {str(save_place).lower()}",
         "local saved = false",
         "local saveError = nil",
         "if saveAttempted then",
@@ -194,9 +194,9 @@ def build_world_materialization_script(
         "    saved = ok",
         "    if not ok then saveError = tostring(err) end",
         "end",
-        f"return {{ success = true, world = worldName, objects = {len(normalized_objects)}, "
-        f"terrainBlocks = {len(normalized_terrain)}, saveAttempted = saveAttempted, "
-        "saved = saved, saveError = saveError }",
+        (f"return {{ success = true, world = worldName, objects = {len(normalized_objects)}, "
+         f"terrainBlocks = {len(normalized_terrain)}, saveAttempted = saveAttempted, "
+         "saved = saved, saveError = saveError }"),
     ])
     script = "\n".join(lines)
     if len(script.encode("utf-8")) > 4 * 1024 * 1024:
