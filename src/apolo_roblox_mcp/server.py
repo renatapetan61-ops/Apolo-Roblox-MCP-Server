@@ -110,6 +110,7 @@ def apolo_list_capabilities() -> dict:
             "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",
             "asset.library", "luau.validate", "game.plan", "project.build",
             "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results", "cloud.world.materialize",
+            "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
         ],
         "planned": {
             "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
