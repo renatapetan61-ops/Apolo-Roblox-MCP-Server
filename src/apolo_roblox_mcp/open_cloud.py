@@ -4,6 +4,8 @@ import json
 import secrets
 import urllib.error
 import urllib.request
+from typing import Any
+from urllib.parse import quote, urlencode
 from pathlib import Path
 
 
@@ -109,6 +111,81 @@ class OpenCloudClient:
         )
         if not isinstance(task_path, str) or not any(re.fullmatch(p, task_path) for p in patterns):
             raise ValueError("Invalid Roblox Luau task resource path.")
+
+
+    @staticmethod
+    def _validate_universe_id(universe_id: str) -> None:
+        if not isinstance(universe_id, str) or not universe_id.isdigit():
+            raise ValueError("universe_id must be numeric.")
+
+    @staticmethod
+    def _segment(value: str, label: str) -> str:
+        if not isinstance(value, str) or not value or len(value) > 200:
+            raise ValueError(f"{label} must contain 1-200 characters.")
+        return quote(value, safe="")
+
+    @staticmethod
+    def _page_query(max_page_size: int, page_token: str | None) -> str:
+        if isinstance(max_page_size, bool) or not isinstance(max_page_size, int) or not 1 <= max_page_size <= 100:
+            raise ValueError("max_page_size must be an integer from 1 to 100.")
+        params = {"maxPageSize": max_page_size}
+        if page_token:
+            if len(page_token) > 2048:
+                raise ValueError("page_token is too long.")
+            params["pageToken"] = page_token
+        return urlencode(params)
+
+    def list_data_stores(self, universe_id: str, max_page_size: int = 100,
+                         page_token: str | None = None) -> dict:
+        self._validate_universe_id(universe_id)
+        query = self._page_query(max_page_size, page_token)
+        url = f"https://apis.roblox.com/cloud/v2/universes/{universe_id}/data-stores?{query}"
+        return self._request("GET", url)
+
+    def list_datastore_entries(self, universe_id: str, data_store_id: str,
+                               scope_id: str | None = None, max_page_size: int = 100,
+                               page_token: str | None = None) -> dict:
+        self._validate_universe_id(universe_id)
+        store = self._segment(data_store_id, "data_store_id")
+        path = f"universes/{universe_id}/data-stores/{store}"
+        if scope_id is not None:
+            path += f"/scopes/{self._segment(scope_id, 'scope_id')}"
+        query = self._page_query(max_page_size, page_token)
+        return self._request("GET", f"https://apis.roblox.com/cloud/v2/{path}/entries?{query}")
+
+    def get_datastore_entry(self, universe_id: str, data_store_id: str,
+                            entry_id: str, scope_id: str | None = None) -> dict:
+        self._validate_universe_id(universe_id)
+        store = self._segment(data_store_id, "data_store_id")
+        entry = self._segment(entry_id, "entry_id")
+        path = f"universes/{universe_id}/data-stores/{store}"
+        if scope_id is not None:
+            path += f"/scopes/{self._segment(scope_id, 'scope_id')}"
+        return self._request(
+            "GET", f"https://apis.roblox.com/cloud/v2/{path}/entries/{entry}"
+        )
+
+    def update_datastore_entry(self, universe_id: str, data_store_id: str,
+                               entry_id: str, value: Any,
+                               scope_id: str | None = None) -> dict:
+        self._validate_universe_id(universe_id)
+        store = self._segment(data_store_id, "data_store_id")
+        entry = self._segment(entry_id, "entry_id")
+        try:
+            body = json.dumps({"value": value}, ensure_ascii=False, allow_nan=False).encode()
+        except (TypeError, ValueError) as exc:
+            raise ValueError("DataStore value must be JSON-serializable and contain no NaN or Infinity.") from exc
+        if len(body) > 4 * 1024 * 1024:
+            raise ValueError("DataStore entry payload exceeds the 4 MiB safety limit.")
+        path = f"universes/{universe_id}/data-stores/{store}"
+        if scope_id is not None:
+            path += f"/scopes/{self._segment(scope_id, 'scope_id')}"
+        return self._request(
+            "PATCH",
+            f"https://apis.roblox.com/cloud/v2/{path}/entries/{entry}",
+            body,
+            {"Content-Type": "application/json"},
+        )
 
     def get_luau_task(self, task_path: str) -> dict:
         self._validate_luau_task_path(task_path)
