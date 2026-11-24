@@ -2,7 +2,7 @@
 
 ## Build a Roblox place file
 
-The GitHub Actions workflow `.github/workflows/build-place.yml` installs the pinned Rojo CLI 7.7.1 and builds a place file without Roblox Studio.
+The GitHub Actions workflow `.github/workflows/build-place.yml` downloads the pinned Rojo CLI 7.7.1 Linux binary from the official release, verifies its published SHA-256 checksum, and builds a place file without Roblox Studio.
 
 - Push changes under `examples/starter-game/` to trigger the sample build, or
 - Run the APOLO Build Place workflow manually and provide a `.project.json` path that exists inside this repository.
