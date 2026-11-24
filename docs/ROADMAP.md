@@ -1,60 +1,68 @@
 # Implementation roadmap
 
+Legend: [x] implemented in code, [~] partial / adapter or integration pending, [ ] not implemented.
+
 ## Phase 0 — Repository foundation
 - [x] Define product scope and safety boundaries
 - [x] Define dual integration architecture
 - [x] Define ForgeGUI-inspired capability matrix
-- [ ] Add runnable MCP server package
-- [ ] Add tests and CI
+- [x] Add runnable Python MCP package and stdio / Streamable HTTP entry point
+- [x] Add GitHub Actions CI definition
+- [~] Verify latest CI run and supported MCP clients (connected GitHub status endpoint currently exposes no check runs)
 
 ## Phase 1 — MCP core
-- [ ] MCP server entry point and configuration
-- [ ] Integration selection and capability discovery
-- [ ] Project workspace tools
-- [ ] Structured errors, operation IDs and audit events
-- [ ] Claude Code / OpenCode / Codex setup documentation
+- [x] MCP server entry point and configuration
+- [x] Integration selection and capability discovery
+- [x] Project workspace tools with path confinement
+- [x] Structured validation errors and release candidate hash
+- [~] Claude Code / OpenCode / Codex setup documentation; client-specific live connection tests pending
 
 ## Phase 2 — Studio-compatible headless workflow
-- [ ] Rojo project scaffolding
-- [ ] Luau source editing and project inspection
-- [ ] Headless Luau validation
-- [ ] Instance / scene manifest generator
-- [ ] UI layout and Luau controller generation
-- [ ] Reproducible place packaging
+- [x] Rojo project scaffolding
+- [x] Luau source editing and project inspection
+- [~] Headless Luau validation (requires Luau CLI installed)
+- [~] Declarative world/map manifest and starter server Luau generation
+- [~] UI design spec and starter ScreenGui LocalScript generation
+- [~] Rojo place build adapter (requires Rojo CLI installed)
+- [ ] Full terrain, mesh, lighting, physics and live Play testing
 - [ ] Optional external Studio MCP connector
 
 ## Phase 3 — Open Cloud
-- [ ] Credential and scope diagnostics
-- [ ] Experience/place metadata
-- [ ] Asset API capability registry
-- [ ] DataStore tools
-- [ ] Place publishing
-- [ ] API response verification and safe retries
+- [x] Place metadata read adapter
+- [x] Current Assets API place update adapter (multipart, asynchronous operation)
+- [x] Poll publication operation and verify isPublished
+- [~] Credential and scope diagnostics (real API key and permissions required)
+- [ ] General asset create/update and thumbnail management
+- [ ] DataStore / MemoryStore operations
+- [ ] Luau Execution API integration and remote test runner
 
 ## Phase 4 — ForgeGUI-inspired creation suite
-- [ ] Image / thumbnail / icon / GUI / HUD providers
-- [ ] GUI kits and design tokens
-- [ ] Textured 3D model provider
-- [ ] Clothing texture workflows
-- [ ] Music and sound effect providers
-- [ ] R15 animation provider
-- [ ] Asset library, revisions and ZIP export
-- [ ] Cost/credit visibility and moderation metadata
+- [~] Local asset library, import, catalog and ZIP export
+- [ ] Image / thumbnail / icon / GUI / HUD generation providers
+- [ ] Reference-guided visual style profiles and revision workflows
+- [ ] Textured 3D model generation and conversion
+- [ ] Clothing texture generation and validation
+- [ ] Music and sound effect generation
+- [ ] R15 animation generation/import
+- [ ] Roblox asset upload and moderation/status tracking
+- [ ] Provider costs, licensing provenance and usage quotas
 
 ## Phase 5 — Full game-building agents
-- [ ] Game brief and design document
-- [ ] World/map generator
+- [x] Deterministic game design task graph
+- [ ] Agent orchestration runtime and persistent task state
+- [ ] World/map generator expansion
 - [ ] Character/NPC systems
 - [ ] Inventory, economy, quest, combat and progression systems
 - [ ] Multiplayer/server authority review
 - [ ] Cross-system integration tests
 
 ## Phase 6 — Release and operations
-- [ ] Manual Creator Dashboard release handoff
-- [ ] Approval-bound automatic publishing
-- [ ] Protected GitHub environments
-- [ ] Release manifests and rollback guidance
-- [ ] Security audit, documentation and versioned release
+- [x] Manual Creator Dashboard release handoff documented
+- [x] Protected GitHub Environment publishing workflow with artifact hash check
+- [x] Roblox async publish operation polling in workflow
+- [~] Configure `roblox-production` environment required reviewers in repository settings
+- [ ] Release manifests, durable approval records and rollback guidance
+- [~] Security audit, end-to-end test and first public release
 
 ## Acceptance criteria
 
