@@ -19,7 +19,7 @@ def test_builds_safe_game_test_harness():
 
 def test_rejects_unsafe_test_specs():
     with pytest.raises(ValueError):
-        build_game_test_script([{"id": "x", "kind": "instance_exists", "path": "Workspace.Parent.Parent"}])
+        build_game_test_script([{"id": "x", "kind": "instance_exists", "path": "Workspace..CoreGui"}])
     with pytest.raises(ValueError):
         build_game_test_script([{"id": "x", "kind": "execute_code", "path": "Workspace"}])
 
