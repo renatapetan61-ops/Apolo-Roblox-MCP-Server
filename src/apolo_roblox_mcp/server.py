@@ -65,6 +65,7 @@ CAPABILITIES = {
         "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status",
         "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run",
         "cloud.game_tests.results", "cloud.world.materialize",
+        "cloud.asset.upload", "cloud.asset.operation_status",
         "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
     ],
 }
@@ -111,6 +112,7 @@ def apolo_list_capabilities() -> dict:
             "asset.library", "luau.validate", "game.plan", "project.build",
             "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results", "cloud.world.materialize",
             "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
+            "cloud.asset.upload", "cloud.asset.operation_status",
         ],
         "planned": {
             "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
@@ -431,6 +433,56 @@ def apolo_run_game_tests(universe_id: str, place_id: str, tests: list[dict],
         "resource_path": resource, "roblox": result,
         "next_step": "Call apolo_get_game_test_results with this task_id until outcome is passed or failed.",
         "warning": "Tests execute against the selected published place version. Avoid destructive DataStore writes; use a dedicated test universe.",
+    }
+
+
+@mcp.tool()
+def apolo_upload_asset(project: str, source_path: str, asset_type: str,
+                       display_name: str, description: str,
+                       creator_type: str, creator_id: str,
+                       confirm_upload: bool = False) -> dict:
+    """Upload one validated local asset to Roblox Open Cloud; requires explicit opt-in."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before uploading Roblox assets.")
+    if not confirm_upload or os.getenv("APOLO_ALLOW_ASSET_UPLOAD", "false").lower() != "true":
+        raise PermissionError("Asset uploads are disabled. Set APOLO_ALLOW_ASSET_UPLOAD=true and explicitly confirm this upload.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    target = safe_path(_project_path(project), source_path)
+    if not target.is_file():
+        raise FileNotFoundError(source_path)
+    result = OpenCloudClient(settings.roblox_api_key).create_asset(
+        asset_type, target, display_name, description, creator_type, creator_id
+    )
+    operation_path = result.get("response", {}).get("path", "")
+    operation_id = operation_path.rsplit("/", 1)[-1] if operation_path.startswith("operations/") else None
+    return {
+        "upload_accepted": operation_id is not None,
+        "operation_id": operation_id,
+        "asset_type": asset_type,
+        "file_name": target.name,
+        "roblox": result,
+        "next_step": "Call apolo_get_asset_operation with operation_id and wait for done=true before using the asset.",
+    }
+
+
+@mcp.tool()
+def apolo_get_asset_operation(operation_id: str) -> dict:
+    """Poll the Roblox Open Cloud operation for a newly uploaded asset."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before polling Roblox asset operations.")
+    if operation_id.startswith("operations/"):
+        operation_id = operation_id.rsplit("/", 1)[-1]
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    result = OpenCloudClient(settings.roblox_api_key).get_operation(operation_id)
+    payload = result.get("response", {})
+    return {
+        "operation_id": operation_id,
+        "done": payload.get("done") is True,
+        "result": payload.get("response"),
+        "error": payload.get("error"),
+        "roblox": result,
     }
 
 
