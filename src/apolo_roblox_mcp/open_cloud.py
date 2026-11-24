@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import secrets
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -11,7 +12,7 @@ class OpenCloudError(RuntimeError):
 
 
 class OpenCloudClient:
-    """Small stdlib-only client for documented Roblox Open Cloud operations."""
+    """Roblox Open Cloud client using an API key with least-privilege permissions."""
 
     def __init__(self, api_key: str, timeout: int = 45):
         if not api_key:
@@ -19,28 +20,10 @@ class OpenCloudClient:
         self.api_key = api_key
         self.timeout = timeout
 
-    def publish_place(self, universe_id: str, place_id: str, place_file: Path) -> dict:
-        if not universe_id.isdigit() or not place_id.isdigit():
-            raise ValueError("Universe ID and Place ID must be numeric.")
-        if not place_file.is_file():
-            raise FileNotFoundError(str(place_file))
-        suffix = place_file.suffix.lower()
-        content_type = {
-            ".rbxlx": "application/xml",
-            ".rbxl": "application/octet-stream",
-        }.get(suffix)
-        if content_type is None:
-            raise ValueError("Place publishing accepts .rbxlx or .rbxl files.")
-        url = (
-            f"https://apis.roblox.com/universes/v1/{universe_id}/places/"
-            f"{place_id}/versions?versionType=Published"
-        )
-        request = urllib.request.Request(
-            url,
-            data=place_file.read_bytes(),
-            headers={"x-api-key": self.api_key, "Content-Type": content_type},
-            method="POST",
-        )
+    def _request(self, method: str, url: str, data: bytes | None = None,
+                 headers: dict[str, str] | None = None) -> dict:
+        request_headers = {"x-api-key": self.api_key, **(headers or {})}
+        request = urllib.request.Request(url, data=data, headers=request_headers, method=method)
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 raw = response.read().decode("utf-8", errors="replace")
@@ -54,3 +37,53 @@ class OpenCloudClient:
             raise OpenCloudError(f"Roblox Open Cloud returned HTTP {exc.code}: {detail}") from exc
         except urllib.error.URLError as exc:
             raise OpenCloudError(f"Could not reach Roblox Open Cloud: {exc.reason}") from exc
+
+    def get_place(self, universe_id: str, place_id: str) -> dict:
+        self._validate_ids(universe_id, place_id)
+        url = f"https://apis.roblox.com/cloud/v2/universes/{universe_id}/places/{place_id}"
+        return self._request("GET", url)
+
+    @staticmethod
+    def _validate_ids(universe_id: str, place_id: str) -> None:
+        if not universe_id.isdigit() or not place_id.isdigit():
+            raise ValueError("Universe ID and Place ID must be numeric.")
+
+    def publish_place(self, universe_id: str, place_id: str, place_file: Path) -> dict:
+        self._validate_ids(universe_id, place_id)
+        if not place_file.is_file():
+            raise FileNotFoundError(str(place_file))
+        content_type = {
+            ".rbxlx": "application/xml",
+            ".rbxl": "application/octet-stream",
+        }.get(place_file.suffix.lower())
+        if content_type is None:
+            raise ValueError("Place publishing accepts .rbxlx or .rbxl files.")
+
+        # Current Roblox guidance uses the Assets API Update Asset endpoint.
+        # It is multipart and asynchronous: a returned operation must be polled.
+        boundary = "----APOLO" + secrets.token_hex(16)
+        metadata = json.dumps({
+            "assetId": int(place_id), "assetType": "Place", "published": True
+        }, separators=(",", ":"))
+        file_bytes = place_file.read_bytes()
+        filename = place_file.name.replace('"', "")
+        body = (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="request"\r\n'
+            "Content-Type: application/json\r\n\r\n"
+            f"{metadata}\r\n"
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="fileContent"; filename="{filename}"\r\n'
+            f"Content-Type: {content_type}\r\n\r\n"
+        ).encode() + file_bytes + f"\r\n--{boundary}--\r\n".encode()
+        url = f"https://apis.roblox.com/assets/v1/assets/{place_id}"
+        return self._request(
+            "PATCH", url, body,
+            {"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        )
+
+    def get_operation(self, operation_id: str) -> dict:
+        if not operation_id or "/" in operation_id or ".." in operation_id:
+            raise ValueError("Invalid Roblox operation ID.")
+        url = f"https://apis.roblox.com/assets/v1/operations/{operation_id}"
+        return self._request("GET", url)
