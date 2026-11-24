@@ -17,6 +17,7 @@ from .ui import create_ui_spec
 from .assets import import_asset, list_assets, export_assets
 from .luau import validate_luau
 from .agents import plan_game
+from .build import build_place
 
 settings = Settings.from_env()
 mcp = FastMCP("APOLO Roblox MCP Server")
@@ -25,7 +26,7 @@ _publish_candidates: dict[str, dict] = {}
 
 CAPABILITIES = {
     "studio_compat": [
-        "project.scaffold", "project.inspect", "luau.write", "luau.validate",
+        "project.scaffold", "project.inspect", "luau.write", "luau.validate", "project.build",
         "world.manifest", "ui.spec", "project.package",
     ],
     "open_cloud": [
@@ -72,7 +73,7 @@ def apolo_list_capabilities() -> dict:
     return {
         "implemented": [
             "server.info", "integration.select", "project.scaffold",
-            "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",\n            "asset.library", "luau.validate", "game.plan",
+            "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",\n            "asset.library", "luau.validate", "game.plan", "project.build",
             "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status",
         ],
         "planned": {
@@ -300,6 +301,14 @@ def apolo_get_publish_operation(candidate_id: str) -> dict:
     return {"candidate_id": candidate_id, "operation_id": operation_id,
             "done": done, "published": published, "roblox": result}
 
+
+
+@mcp.tool()
+def apolo_build_place(project: str, output_name: str = "place.rbxlx") -> dict:
+    """Build a Roblox place headlessly with Rojo if installed; skipped builds are never marked passed."""
+    if _selected_mode != "studio_compat":
+        raise RuntimeError("Select studio_compat before building a local project.")
+    return build_place(settings.workspace, project, output_name)
 
 def main() -> None:
     transport = os.getenv("APOLO_MCP_TRANSPORT", "stdio")
