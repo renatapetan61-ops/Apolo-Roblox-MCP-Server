@@ -23,3 +23,10 @@ Direct publication through the MCP tool is disabled by default. The safer recomm
 - Saving is a separate opt-in: `APOLO_ALLOW_PLACE_SAVE=true`, `save_place=true` and `confirm_save_place=true` are all required.
 - Save operations use `SaveWithoutPublish=true`, but they still overwrite the saved state of the target place. Use a dedicated test place and verify rollback before enabling this flag.
 - Roblox may reject SavePlaceAsync unless the place was created with CreatePlaceAsync or has the relevant API enabled in its place settings.
+
+## Roblox asset uploads
+
+- Uploading assets is disabled by default and requires both `APOLO_ALLOW_ASSET_UPLOAD=true` and `confirm_upload=true` for each MCP call.
+- Source files must be inside the configured project workspace. Uploads are limited to one file up to 20 MiB and the API-supported extensions documented by Roblox.
+- Use a least-privilege API key with asset write permissions. Poll the returned operation and do not assume an asset is ready until Roblox reports `done=true` and returns the asset result.
+- Uploading an asset is not the same as adding it to a game, publishing an experience, or generating a new asset with AI.
