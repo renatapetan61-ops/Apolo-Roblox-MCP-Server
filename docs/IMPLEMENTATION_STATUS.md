@@ -4,7 +4,7 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 
 | Capability | Status | Notes |
 |---|---|---|
-| MCP server entry point | Implemented, CI passing | Python MCP SDK; stdio and Streamable HTTP; lint and 21 unit tests passed in GitHub Actions |
+| MCP server entry point | Implemented, CI passing | Python MCP SDK; stdio and Streamable HTTP; lint and 23 unit tests passed in GitHub Actions |
 | Integration selection | Implemented | Studio compatibility / Open Cloud |
 | Rojo project scaffold | Implemented | Source files, not a binary place |
 | Project read/write/list | Implemented | Workspace path confinement |
@@ -16,7 +16,8 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 | Headless Open Cloud Luau execution | Implemented adapter, live test pending | Create task, validate Roblox task resource paths, inspect task and logs; gated by environment opt-in |
 | Game test executor | Initial implementation, CI unit tests passing | Declarative checks for instance existence, class, child count, property and attribute; live Roblox test pending |
 | Open Cloud place publishing | Initial current Assets API adapter | Multipart Update Asset, async operation polling; requires asset read/write permission and valid .rbxl/.rbxlx; not tested against live Roblox |
-| Open Cloud asset upload | Initial adapter, live test pending | Multipart upload for Images, Decals, Models, Audio, Animation and Video; 20 MiB limit, explicit confirmation and async operation polling |\n| Open Cloud DataStores | Pending | Requires scoped Luau Execution wrappers and test-universe safeguards |
+| Open Cloud asset upload | Initial adapter, live test pending | Multipart upload for Images, Decals, Models, Audio, Animation and Video; 20 MiB limit, explicit confirmation and async operation polling |
+| Open Cloud DataStores | Initial read/update adapters, live test pending | List stores, list entries, read entries and update existing entries; write requires explicit opt-in; create/delete remain pending |
 | Thumbnails / icons / models / audio / animations generation | Pending provider adapters | Requires user-selected provider credentials |
 | Multi-agent orchestration | Initial persistent runtime | SQLite task DAG, specialist roles, dependency handoffs, worker leases and retry handling; connected MCP clients are the workers, no model spawning yet |
 | Manual / approved publishing | Initial | Manual Creator Dashboard handoff documented; GitHub workflow now downloads an artifact from this repo, verifies SHA-256, submits and polls the current Assets API. Configure protected environment reviewers before use |
