@@ -18,6 +18,7 @@ from .assets import import_asset, list_assets, export_assets
 from .luau import validate_luau
 from .agents import plan_game
 from .build import build_place
+from .test_runner import build_game_test_script, summarize_task
 
 settings = Settings.from_env()
 mcp = FastMCP("APOLO Roblox MCP Server")
@@ -76,11 +77,11 @@ def apolo_list_capabilities() -> dict:
             "server.info", "integration.select", "project.scaffold",
             "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",
             "asset.library", "luau.validate", "game.plan", "project.build",
-            "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status",
+            "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results",
         ],
         "planned": {
             "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
-            "open_cloud": ["asset.operations", "datastores", "luau.execution"],
+            "open_cloud": ["asset.operations", "datastores"],
             "assets": ["thumbnail", "icon", "gui", "hud", "avatar", "model3d",
                        "clothing", "music", "sound_effect", "r15_animation", "asset_library"],
         },
@@ -337,6 +338,58 @@ def apolo_execute_luau(universe_id: str, place_id: str, script: str,
     return {"accepted": True, "task_id": task_id, "resource_path": resource,
             "roblox": result,
             "warning": "Task runs against a Roblox place version. DataModel edits are not automatically persisted; cloud services called by the script may affect real data."}
+
+
+@mcp.tool()
+def apolo_run_game_tests(universe_id: str, place_id: str, tests: list[dict],
+                         confirm_live_execution: bool = False,
+                         timeout_seconds: int = 300) -> dict:
+    """Run declarative game QA checks against a published Roblox place using headless Luau Execution."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before running Roblox game tests.")
+    if not confirm_live_execution or os.getenv("APOLO_ALLOW_LUAU_EXECUTION", "false").lower() != "true":
+        raise PermissionError("Cloud game tests are disabled. Set APOLO_ALLOW_LUAU_EXECUTION=true and explicitly confirm this invocation.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    script = build_game_test_script(tests)
+    result = OpenCloudClient(settings.roblox_api_key).create_luau_task(
+        universe_id, place_id, script, timeout_seconds
+    )
+    resource = result.get("response", {}).get("path")
+    if not resource:
+        return {"accepted": False, "reason": "Roblox response did not include a task resource path.", "roblox": result}
+    task_id = resource.rsplit("/", 1)[-1]
+    _luau_tasks[task_id] = {
+        "path": resource, "universe_id": universe_id, "place_id": place_id,
+        "kind": "game_test", "test_count": len(tests),
+    }
+    return {
+        "accepted": True, "task_id": task_id, "test_count": len(tests),
+        "resource_path": resource, "roblox": result,
+        "next_step": "Call apolo_get_game_test_results with this task_id until outcome is passed or failed.",
+        "warning": "Tests execute against the selected published place version. Avoid destructive DataStore writes; use a dedicated test universe.",
+    }
+
+
+@mcp.tool()
+def apolo_get_game_test_results(task_id: str) -> dict:
+    """Poll a game test task and return normalized pass/fail status, assertions and logs."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before querying Roblox game tests.")
+    task = _luau_tasks.get(task_id)
+    if task is None or task.get("kind") != "game_test":
+        raise ValueError("Unknown game test task ID in this MCP server process.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    client = OpenCloudClient(settings.roblox_api_key)
+    raw = client.get_luau_task(task["path"])
+    summary = summarize_task(raw)
+    logs = client.get_luau_task_logs(task["path"])
+    return {
+        "task_id": task_id, "test_count": task["test_count"],
+        **summary, "logs": logs.get("response", {}),
+        "roblox_task": raw.get("response", {}),
+    }
 
 
 @mcp.tool()
