@@ -71,3 +71,7 @@ APOLO provides an initial multipart upload adapter through `apolo_upload_asset` 
 ## DataStore APIs
 
 The Open Cloud adapter supports listing standard DataStores, listing entries, reading one entry and updating an existing entry. Configure the matching API key scopes: `universe-datastores.control:list`, `universe-datastores.objects:list`, `universe-datastores.objects:read`, and `universe-datastores.objects:update`. Writes require `APOLO_ALLOW_DATASTORE_WRITES=true` and `confirm_update=true`. Create/delete operations are not exposed yet. See [Roblox's Open Cloud DataStore guide](https://create.roblox.com/docs/cloud/guides/data-stores) and [scope reference](https://create.roblox.com/docs/cloud/reference/scopes).
+
+## AI image generation
+
+The initial image adapter calls the OpenAI Images API and saves returned PNG bytes inside the project workspace. It supports GPT-Image-2.6 Sunburst and Flare models, with a small set of approved sizes and quality levels. Generation is disabled by default and requires `OPENAI_API_KEY`, `APOLO_ALLOW_IMAGE_GENERATION=true` and `confirm_generation=true`. Generated images must be reviewed and separately uploaded to Roblox if approved. 3D, clothing, audio and animation generation are not implemented yet. See [AI asset guide](AI_ASSETS.md) and [OpenAI image generation docs](https://platform.openai.com/docs/guides/image-generation).
