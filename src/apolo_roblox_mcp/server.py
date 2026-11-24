@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import threading
 import time
 import uuid
 import zipfile
@@ -24,7 +26,31 @@ settings = Settings.from_env()
 mcp = FastMCP("APOLO Roblox MCP Server")
 _selected_mode = settings.default_integration
 _publish_candidates: dict[str, dict] = {}
-_luau_tasks: dict[str, dict] = {}
+_TASK_REGISTRY = settings.workspace / ".apolo" / "luau_tasks.json"
+_TASK_LOCK = threading.Lock()
+
+
+def _load_luau_tasks() -> dict[str, dict]:
+    if not _TASK_REGISTRY.is_file():
+        return {}
+    try:
+        payload = json.loads(_TASK_REGISTRY.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+_luau_tasks: dict[str, dict] = _load_luau_tasks()
+
+
+def _persist_luau_task(task_id: str, record: dict) -> None:
+    with _TASK_LOCK:
+        _luau_tasks[task_id] = record
+        _TASK_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+        temporary = _TASK_REGISTRY.with_suffix(".tmp")
+        temporary.write_text(json.dumps(_luau_tasks, indent=2) + "\\n", encoding="utf-8")
+        os.replace(temporary, _TASK_REGISTRY)
+
 
 CAPABILITIES = {
     "studio_compat": [
@@ -32,8 +58,9 @@ CAPABILITIES = {
         "world.manifest", "ui.spec", "project.package",
     ],
     "open_cloud": [
-        "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.asset.operations",
-        "cloud.datastores",
+        "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status",
+        "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run",
+        "cloud.game_tests.results",
     ],
 }
 
@@ -334,7 +361,10 @@ def apolo_execute_luau(universe_id: str, place_id: str, script: str,
     if not resource:
         return {"accepted": False, "roblox": result}
     task_id = resource.rsplit("/", 1)[-1]
-    _luau_tasks[task_id] = {"path": resource, "universe_id": universe_id, "place_id": place_id}
+    _persist_luau_task(task_id, {
+        "path": resource, "universe_id": universe_id, "place_id": place_id,
+        "kind": "luau", "created_at": time.time(),
+    })
     return {"accepted": True, "task_id": task_id, "resource_path": resource,
             "roblox": result,
             "warning": "Task runs against a Roblox place version. DataModel edits are not automatically persisted; cloud services called by the script may affect real data."}
@@ -359,10 +389,10 @@ def apolo_run_game_tests(universe_id: str, place_id: str, tests: list[dict],
     if not resource:
         return {"accepted": False, "reason": "Roblox response did not include a task resource path.", "roblox": result}
     task_id = resource.rsplit("/", 1)[-1]
-    _luau_tasks[task_id] = {
+    _persist_luau_task(task_id, {
         "path": resource, "universe_id": universe_id, "place_id": place_id,
-        "kind": "game_test", "test_count": len(tests),
-    }
+        "kind": "game_test", "test_count": len(tests), "created_at": time.time(),
+    })
     return {
         "accepted": True, "task_id": task_id, "test_count": len(tests),
         "resource_path": resource, "roblox": result,
