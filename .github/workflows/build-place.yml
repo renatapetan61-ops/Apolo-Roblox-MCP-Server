@@ -1,0 +1,77 @@
+name: APOLO Build Place
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/starter-game/**"
+      - ".github/workflows/build-place.yml"
+  workflow_dispatch:
+    inputs:
+      project_path:
+        description: Path to a Rojo project file inside this repository
+        required: true
+        default: examples/starter-game/default.project.json
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-place:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install pinned Rojo CLI
+        run: cargo install rojo --version 7.7.1 --locked
+
+      - name: Validate project path
+        env:
+          PROJECT_FILE: ${{ github.event.inputs.project_path || 'examples/starter-game/default.project.json' }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          root = Path.cwd().resolve()
+          project = (root / os.environ["PROJECT_FILE"]).resolve()
+          if root not in project.parents or not project.is_file():
+              raise SystemExit("project_path must identify an existing file inside this repository.")
+          if not project.name.endswith(".project.json"):
+              raise SystemExit("project_path must end with .project.json.")
+          print(f"Building: {project.relative_to(root)}")
+          PY
+
+      - name: Build Roblox place
+        env:
+          PROJECT_FILE: ${{ github.event.inputs.project_path || 'examples/starter-game/default.project.json' }}
+        run: |
+          mkdir -p dist
+          rojo --version
+          rojo build "$PROJECT_FILE" --output dist/apolo-place.rbxlx
+          test -s dist/apolo-place.rbxlx
+          sha256sum dist/apolo-place.rbxlx | tee dist/SHA256SUMS
+          HASH="$(sha256sum dist/apolo-place.rbxlx | cut -d' ' -f1)"
+          {
+            echo "## APOLO place build"
+            echo "- Source run ID: $GITHUB_RUN_ID"
+            echo "- Artifact name: apolo-place-$GITHUB_RUN_ID"
+            echo "- File: apolo-place.rbxlx"
+            echo "- SHA-256: $HASH"
+            echo "- Publishing: NOT PERFORMED"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload place artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apolo-place-${{ github.run_id }}
+          path: |
+            dist/apolo-place.rbxlx
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
