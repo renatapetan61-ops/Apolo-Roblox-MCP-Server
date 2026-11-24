@@ -18,7 +18,8 @@ def test_world_manifest(tmp_path: Path):
     slug = project(tmp_path)
     result = build_world_manifest(tmp_path, slug, "Forest", "Starter forest", "fantasy", "small",
                                   [{"name": "Ground", "size": [100, 2, 100]}])
-    assert result["object_count"] == 1\n    assert (tmp_path / slug / "src/server/GeneratedWorld.server.lua").is_file()
+    assert result["object_count"] == 1
+    assert (tmp_path / slug / "src/server/GeneratedWorld.server.lua").is_file()
     assert (tmp_path / slug / result["path"]).is_file()
 
 
@@ -33,7 +34,8 @@ def test_ui_spec(tmp_path: Path):
     slug = project(tmp_path)
     result = create_ui_spec(tmp_path, slug, "Main Menu", "Main menu",
                             {"surface": "#202020"}, [{"class_name": "TextButton", "text": "Play"}])
-    assert result["component_count"] == 1\n    assert (tmp_path / slug / "src/client/main-menu.client.lua").is_file()
+    assert result["component_count"] == 1
+    assert (tmp_path / slug / "src/client/main-menu.client.lua").is_file()
 
 
 def test_asset_import_and_export(tmp_path: Path):
