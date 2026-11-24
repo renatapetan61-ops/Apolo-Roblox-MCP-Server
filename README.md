@@ -30,7 +30,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/FEATURES.md](docs/FEATUR
 - Open Cloud cannot perform every editor operation or guarantee that every Studio-only feature can be authored or tested remotely.
 - A successful build or upload is not proof of gameplay correctness. Runtime validation must be reported separately.
 - Asset generation requires configured provider credentials and may incur costs. No generated asset, upload, or publication is claimed unless the provider/API confirms it.
-- Publishing is either (a) manual via Creator Dashboard, or (b) automatic only after explicit user approval for that exact release.
+- Publishing is either (a) manual via Creator Dashboard, or (b) via a protected GitHub Actions environment with human reviewer approval for the exact artifact hash. Direct MCP publishing is disabled by default.
 
 ## Development
 
