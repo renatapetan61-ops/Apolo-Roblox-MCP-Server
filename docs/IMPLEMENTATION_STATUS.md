@@ -4,7 +4,7 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 
 | Capability | Status | Notes |
 |---|---|---|
-| MCP server entry point | Implemented, CI verification pending | Python MCP SDK; stdio and Streamable HTTP |
+| MCP server entry point | Implemented, CI passing | Python MCP SDK; stdio and Streamable HTTP; lint and 21 unit tests passed in GitHub Actions |
 | Integration selection | Implemented | Studio compatibility / Open Cloud |
 | Rojo project scaffold | Implemented | Source files, not a binary place |
 | Project read/write/list | Implemented | Workspace path confinement |
