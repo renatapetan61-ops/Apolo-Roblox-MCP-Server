@@ -4,6 +4,7 @@ import hashlib
 import os
 import uuid
 import zipfile
+import time
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -28,7 +29,7 @@ CAPABILITIES = {
         "world.manifest", "ui.spec", "project.package",
     ],
     "open_cloud": [
-        "cloud.place.publish", "cloud.place.metadata", "cloud.asset.operations",
+        "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.asset.operations",
         "cloud.datastores",
     ],
 }
@@ -72,7 +73,7 @@ def apolo_list_capabilities() -> dict:
         "implemented": [
             "server.info", "integration.select", "project.scaffold",
             "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",\n            "asset.library", "luau.validate", "game.plan",
-            "cloud.place.publish_with_approval",
+            "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status",
         ],
         "planned": {
             "studio_compat": ["luau.validate", "world.manifest", "ui.spec", "live.playtest"],
@@ -150,7 +151,7 @@ def apolo_prepare_publish(artifact_path: str, universe_id: str, place_id: str) -
     digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
     candidate_id = uuid.uuid4().hex
     _publish_candidates[candidate_id] = {
-        "path": str(artifact), "sha256": digest,
+        "path": str(artifact), "sha256": digest, "created_at": time.time(), "state": "prepared",
         "universe_id": universe_id, "place_id": place_id,
     }
     return {
@@ -166,30 +167,49 @@ def apolo_prepare_publish(artifact_path: str, universe_id: str, place_id: str) -
 
 @mcp.tool()
 def apolo_publish_approved(candidate_id: str, approval_phrase: str) -> dict:
-    """Publish a prepared place only when the exact release-specific approval phrase is supplied."""
+    """Submit a prepared place for publishing after exact release-specific user approval."""
     if _selected_mode != "open_cloud":
         raise RuntimeError("Select open_cloud before publishing.")
     candidate = _publish_candidates.get(candidate_id)
     if candidate is None:
-        raise ValueError("Unknown or expired release candidate.")
+        raise ValueError("Unknown or expired release candidate. Prepare it again.")
+    if candidate["state"] != "prepared":
+        raise RuntimeError("This candidate was already submitted or has an uncertain outcome; do not retry blindly.")
+    if time.time() - candidate["created_at"] > 1800:
+        _publish_candidates.pop(candidate_id, None)
+        raise ValueError("Release candidate expired after 30 minutes. Prepare and approve a new candidate.")
     expected = f"APPROVE ROBLOX RELEASE {candidate_id}"
     if approval_phrase != expected:
         raise PermissionError("Approval phrase does not match this release candidate.")
+    artifact = Path(candidate["path"])
+    if not artifact.is_file():
+        raise FileNotFoundError("Approved artifact no longer exists.")
+    digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    if digest != candidate["sha256"]:
+        _publish_candidates.pop(candidate_id, None)
+        raise ValueError("Artifact changed after approval; prepare and approve a new candidate.")
     api_key = settings.roblox_api_key
     if not api_key:
         raise RuntimeError("ROBLOX_API_KEY is not configured in the server environment.")
-    result = OpenCloudClient(api_key).publish_place(
-        candidate["universe_id"], candidate["place_id"], Path(candidate["path"])
-    )
-    _publish_candidates.pop(candidate_id, None)
+    candidate["state"] = "submitting"
+    try:
+        result = OpenCloudClient(api_key).publish_place(
+            candidate["universe_id"], candidate["place_id"], artifact
+        )
+    except Exception:
+        candidate["state"] = "outcome_unknown"
+        raise
+    operation = result.get("response", {}).get("path", "")
+    candidate["state"] = "submitted"
+    candidate["operation_id"] = operation.rsplit("/", 1)[-1] if operation else None
     return {
-        "published_request_confirmed": True,
+        "upload_accepted": True,
+        "publication_completed": False,
         "candidate_id": candidate_id,
         "sha256": candidate["sha256"],
         "roblox": result,
+        "next_step": "Poll apolo_get_publish_operation until done=true; verify response.isPublished=true.",
     }
-
-
 
 @mcp.tool()
 def apolo_generate_world(project: str, name: str, description: str, theme: str,
@@ -245,6 +265,40 @@ def apolo_export_assets(project: str) -> dict:
 def apolo_plan_game(brief: str, genre: str, target: str, constraints: list[str]) -> dict:
     """Create an AI-agent task graph for a game brief; the connected AI client orchestrates execution."""
     return plan_game(brief, genre, target, constraints)
+
+
+
+@mcp.tool()
+def apolo_get_place_metadata(universe_id: str, place_id: str) -> dict:
+    """Read place metadata from Roblox Open Cloud; requires read permission."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before calling Roblox Open Cloud.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    return OpenCloudClient(settings.roblox_api_key).get_place(universe_id, place_id)
+
+
+@mcp.tool()
+def apolo_get_publish_operation(candidate_id: str) -> dict:
+    """Poll the asynchronous Roblox publishing operation for a submitted release."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before calling Roblox Open Cloud.")
+    candidate = _publish_candidates.get(candidate_id)
+    if candidate is None or candidate.get("state") != "submitted":
+        raise ValueError("No submitted operation is recorded for this candidate.")
+    operation_id = candidate.get("operation_id")
+    if not operation_id:
+        raise RuntimeError("Roblox did not return an operation ID; verify the response manually.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    result = OpenCloudClient(settings.roblox_api_key).get_operation(operation_id)
+    payload = result.get("response", {}).get("response", {})
+    done = result.get("response", {}).get("done") is True
+    published = done and payload.get("isPublished") is True
+    if done:
+        candidate["state"] = "completed" if published else "failed"
+    return {"candidate_id": candidate_id, "operation_id": operation_id,
+            "done": done, "published": published, "roblox": result}
 
 
 def main() -> None:
