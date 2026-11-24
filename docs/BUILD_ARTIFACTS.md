@@ -26,3 +26,15 @@ Configure required reviewers on that environment in repository settings. The wor
 ## Current boundary
 
 The checked-in starter experience is a build-pipeline fixture, not a finished commercial game. The workflow can build another Rojo project committed inside this repository by selecting its project file. It cannot build a project that exists only in a local phone workspace until that project is committed or otherwise supplied to the workflow.
+
+
+## First successful sample build
+
+On 2026-11-24, the sample workflow completed successfully:
+
+- Source run ID: `45506347168`
+- Artifact name: `apolo-place-45506347168`
+- File: `apolo-place.rbxlx`
+- File SHA-256: `0df412f5e6c58b42c3e434b8a7b55e1f6c6da0d223eee15234c78359e51e4aaf`
+
+This is the starter experience fixture, not a finished game. The artifact expires after the configured 14-day retention period. Rebuild before using the protected publishing workflow if it has expired.
