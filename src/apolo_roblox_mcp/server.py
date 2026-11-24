@@ -69,7 +69,10 @@ CAPABILITIES = {
         "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run",
         "cloud.game_tests.results", "cloud.world.materialize",
         "cloud.asset.upload", "cloud.asset.operation_status",
+        "cloud.datastore.list", "cloud.datastore.entries.list",
+        "cloud.datastore.entries.read", "cloud.datastore.entries.update",
         "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
+        "assets.ai.image.generate",
     ],
 }
 
@@ -115,7 +118,6 @@ def apolo_list_capabilities() -> dict:
             "asset.library", "luau.validate", "game.plan", "project.build",
             "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results", "cloud.world.materialize",
             "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
-            "assets.ai.image.generate",
             "assets.ai.image.generate",
             "cloud.asset.upload", "cloud.asset.operation_status",
             "cloud.datastore.list", "cloud.datastore.entries.list",
