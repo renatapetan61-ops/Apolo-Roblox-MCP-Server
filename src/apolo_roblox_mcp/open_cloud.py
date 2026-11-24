@@ -211,24 +211,22 @@ class OpenCloudClient:
             raise ValueError("Roblox Assets API content uploads are limited to 20 MiB per asset.")
 
         supported = {
-            "Image": {".png", ".jpg", ".jpeg", ".bmp", ".tga"},
+            "Image": {".png", ".jpeg", ".bmp", ".tga"},
             "Decal": {".png", ".jpg", ".jpeg", ".bmp", ".tga"},
             "Model": {".fbx", ".gltf", ".glb", ".rbxm", ".rbxmx"},
             "Audio": {".mp3", ".ogg", ".wav", ".flac"},
             "Animation": {".rbxm", ".rbxmx"},
-            "Video": {".mp4", ".mov"},
         }
         suffix = asset_file.suffix.lower()
         if asset_type not in supported or suffix not in supported[asset_type]:
             raise ValueError(f"Unsupported file extension {suffix!r} for Roblox asset type {asset_type!r}.")
         content_types = {
-            ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".png": "image/png", ".jpeg": "image/jpeg",
             ".bmp": "image/bmp", ".tga": "image/tga",
             ".fbx": "model/fbx", ".gltf": "model/gltf+json",
             ".glb": "model/gltf-binary", ".rbxm": "model/x-rbxm",
             ".rbxmx": "model/x-rbxm", ".mp3": "audio/mpeg",
             ".ogg": "audio/ogg", ".wav": "audio/wav", ".flac": "audio/flac",
-            ".mp4": "video/mp4", ".mov": "video/mov",
         }
         creator_field = "userId" if creator_type == "user" else "groupId"
         metadata = {
