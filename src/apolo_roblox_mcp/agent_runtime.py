@@ -5,6 +5,7 @@ import re
 import sqlite3
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,7 @@ class AgentOrchestrator:
         self.lease_seconds = max(30, min(lease_seconds, 3600))
         self.max_attempts = max(1, min(max_attempts, 10))
         self.database.parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as connection:
+        with self._session() as connection:
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS runs (
@@ -75,6 +76,18 @@ class AgentOrchestrator:
         connection.execute("PRAGMA journal_mode = WAL")
         return connection
 
+    @contextmanager
+    def _session(self):
+        connection = self._connect()
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.close()
+
     @staticmethod
     def _agent_id(value: str) -> str:
         if not isinstance(value, str) or not _AGENT_ID.fullmatch(value):
@@ -108,7 +121,7 @@ class AgentOrchestrator:
             "qa_engineer": ["integrator"],
             "release_manager": ["qa_engineer"],
         }
-        with self._connect() as connection:
+        with self._session() as connection:
             connection.execute("BEGIN IMMEDIATE")
             connection.execute(
                 "INSERT INTO runs VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -135,7 +148,7 @@ class AgentOrchestrator:
                 raise AgentRunError("roles contains an unknown agent role.")
             allowed_roles = set(roles)
         now = time.time()
-        with self._connect() as connection:
+        with self._session() as connection:
             connection.execute("BEGIN IMMEDIATE")
             expired = connection.execute(
                 "SELECT task_id, attempts, max_attempts FROM tasks "
@@ -212,7 +225,7 @@ class AgentOrchestrator:
             raise AgentRunError("Agent output exceeds the 1 MiB task-result limit.")
 
         now = time.time()
-        with self._connect() as connection:
+        with self._session() as connection:
             connection.execute("BEGIN IMMEDIATE")
             task = connection.execute(
                 "SELECT * FROM tasks WHERE task_id=? AND run_id=?",
@@ -240,7 +253,7 @@ class AgentOrchestrator:
         return self.get_run(run_id)
 
     def get_run(self, run_id: str) -> dict:
-        with self._connect() as connection:
+        with self._session() as connection:
             run = connection.execute("SELECT * FROM runs WHERE run_id=?", (run_id,)).fetchone()
             if run is None:
                 raise AgentRunError("Unknown agent run ID.")
