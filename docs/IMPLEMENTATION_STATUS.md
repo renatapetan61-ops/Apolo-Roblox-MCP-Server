@@ -18,7 +18,7 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 | Open Cloud place publishing | Initial current Assets API adapter | Multipart Update Asset, async operation polling; requires asset read/write permission and valid .rbxl/.rbxlx; not tested against live Roblox |
 | Open Cloud metadata / DataStores / asset APIs | Partial | Place metadata and place publishing adapters exist; asset upload and direct DataStore APIs remain pending |
 | Thumbnails / icons / models / audio / animations generation | Pending provider adapters | Requires user-selected provider credentials |
-| Autonomous multi-agent execution | Planning interface only | AI client orchestrates task graph; no background agent runtime claimed |
+| Multi-agent orchestration | Initial persistent runtime | SQLite task DAG, specialist roles, dependency handoffs, worker leases and retry handling; connected MCP clients are the workers, no model spawning yet |
 | Manual / approved publishing | Initial | Manual Creator Dashboard handoff documented; GitHub workflow now downloads an artifact from this repo, verifies SHA-256, submits and polls the current Assets API. Configure protected environment reviewers before use |
 
 ## Current limitation
