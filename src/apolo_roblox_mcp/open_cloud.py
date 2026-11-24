@@ -82,6 +82,30 @@ class OpenCloudClient:
             {"Content-Type": f"multipart/form-data; boundary={boundary}"},
         )
 
+
+    def create_luau_task(self, universe_id: str, place_id: str, script: str,
+                         timeout_seconds: int = 300) -> dict:
+        self._validate_ids(universe_id, place_id)
+        if not script.strip() or len(script.encode("utf-8")) > 4 * 1024 * 1024:
+            raise ValueError("Luau script must be non-empty and no larger than 4 MiB.")
+        if not 1 <= timeout_seconds <= 300:
+            raise ValueError("Luau task timeout must be between 1 and 300 seconds.")
+        url = (f"https://apis.roblox.com/cloud/v2/universes/{universe_id}/places/"
+               f"{place_id}/luau-execution-session-tasks")
+        body = json.dumps({"script": script, "timeout": f"{timeout_seconds}s"}).encode()
+        return self._request("POST", url, body, {"Content-Type": "application/json"})
+
+    def get_luau_task(self, task_path: str) -> dict:
+        # Use only the resource path returned by Roblox; never accept a caller-supplied URL.
+        if not task_path.startswith("universes/") or "://" in task_path or ".." in task_path:
+            raise ValueError("Invalid Roblox Luau task resource path.")
+        return self._request("GET", "https://apis.roblox.com/cloud/v2/" + task_path)
+
+    def get_luau_task_logs(self, task_path: str) -> dict:
+        if not task_path.startswith("universes/") or "://" in task_path or ".." in task_path:
+            raise ValueError("Invalid Roblox Luau task resource path.")
+        return self._request("GET", "https://apis.roblox.com/cloud/v2/" + task_path + "/logs")
+
     def get_operation(self, operation_id: str) -> dict:
         if not operation_id or "/" in operation_id or ".." in operation_id:
             raise ValueError("Invalid Roblox operation ID.")
