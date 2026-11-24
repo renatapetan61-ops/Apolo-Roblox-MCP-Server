@@ -4,7 +4,7 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 
 | Capability | Status | Notes |
 |---|---|---|
-| MCP server entry point | Implemented, CI passing | Python MCP SDK; stdio and Streamable HTTP; lint and 28 unit tests passed in GitHub Actions at run #132 |
+| MCP server entry point | Implemented, CI passing | Python MCP SDK; stdio and Streamable HTTP; lint and 29 unit tests passed in GitHub Actions at run #145 |
 | Integration selection | Implemented | Studio compatibility / Open Cloud |
 | Rojo project scaffold | Implemented | Source files, not a binary place |
 | Project read/write/list | Implemented | Workspace path confinement |
@@ -15,7 +15,7 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 | Open Cloud place metadata | Implemented adapter, live test pending | Stable Get Place endpoint; requires read scope |
 | Headless Open Cloud Luau execution | Implemented adapter, live test pending | Create task, validate Roblox task resource paths, inspect task and logs; gated by environment opt-in |
 | Game test executor | Initial implementation, CI unit tests passing | Declarative checks for instance existence, class, child count, property and attribute; live Roblox test pending |
-| Open Cloud place publishing | Initial current Assets API adapter | Multipart Update Asset, async operation polling; requires asset read/write permission and valid .rbxl/.rbxlx; not tested against live Roblox |
+| Rojo place artifact build | Workflow implemented, first build in progress | Pinned Rojo 7.7.1; starter project, .rbxlx artifact, SHA-256 and 14-day artifact retention; build never publishes |\n| Open Cloud place publishing | Initial current Assets API adapter | Multipart Update Asset, async operation polling; requires asset read/write permission and valid .rbxl/.rbxlx; not tested against live Roblox |
 | Open Cloud asset upload | Initial adapter, live test pending | Multipart upload for Images, Decals, Models, Audio and Animation; 20 MiB limit, explicit confirmation and async operation polling |
 | Open Cloud DataStores | Initial read/update adapters, live test pending | List stores, list entries, read entries and update existing entries; write requires explicit opt-in; create/delete remain pending |
 | AI image assets | Initial OpenAI Images provider | PNG generation for icons, thumbnails, UI art and textures; explicit billing/confirmation gate |
