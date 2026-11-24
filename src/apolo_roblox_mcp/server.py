@@ -11,6 +11,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from .agent_runtime import AgentOrchestrator
 from .agents import plan_game
 from .assets import export_assets, import_asset, list_assets
 from .build import build_place
@@ -25,6 +26,7 @@ from .worlds import build_world_manifest
 
 settings = Settings.from_env()
 mcp = FastMCP("APOLO Roblox MCP Server")
+_agent_orchestrator = AgentOrchestrator(settings.workspace / ".apolo" / "agents.sqlite3")
 _selected_mode = settings.default_integration
 _publish_candidates: dict[str, dict] = {}
 _TASK_REGISTRY = settings.workspace / ".apolo" / "luau_tasks.json"
@@ -57,11 +59,13 @@ CAPABILITIES = {
     "studio_compat": [
         "project.scaffold", "project.inspect", "luau.write", "luau.validate", "project.build",
         "world.manifest", "ui.spec", "project.package",
+        "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
     ],
     "open_cloud": [
         "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status",
         "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run",
         "cloud.game_tests.results", "cloud.world.materialize",
+        "agent.run.create", "agent.task.claim", "agent.task.complete", "agent.run.status",
     ],
 }
 
@@ -293,6 +297,33 @@ def apolo_export_assets(project: str) -> dict:
     if _selected_mode != "studio_compat":
         raise RuntimeError("Select studio_compat to export local assets.")
     return export_assets(settings.workspace, project)
+
+
+@mcp.tool()
+def apolo_create_agent_run(brief: str, genre: str, target: str,
+                           constraints: list[str] | None = None) -> dict:
+    """Create a persistent specialist-agent DAG for a complete Roblox game project."""
+    return _agent_orchestrator.create_run(brief, genre, target, constraints)
+
+
+@mcp.tool()
+def apolo_claim_agent_task(agent_id: str, roles: list[str] | None = None) -> dict:
+    """Claim the next dependency-ready task for an external MCP-connected specialist agent."""
+    task = _agent_orchestrator.claim_task(agent_id, roles)
+    return {"task": task, "available": task is not None}
+
+
+@mcp.tool()
+def apolo_complete_agent_task(run_id: str, task_id: str, agent_id: str,
+                              output: dict, success: bool = True) -> dict:
+    """Submit a specialist agent result, unlock dependent tasks, and persist the handoff."""
+    return _agent_orchestrator.complete_task(run_id, task_id, agent_id, output, success)
+
+
+@mcp.tool()
+def apolo_get_agent_run(run_id: str) -> dict:
+    """Read persistent agent-run status, task dependencies, owners and deliverables."""
+    return _agent_orchestrator.get_run(run_id)
 
 
 @mcp.tool()
