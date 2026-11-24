@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from apolo_roblox_mcp.open_cloud import OpenCloudClient
 
 
@@ -77,8 +79,6 @@ def test_luau_task_get_and_logs_use_roblox_resource_path(monkeypatch):
 
 
 def test_luau_task_path_rejects_arbitrary_paths():
-    import pytest
-
     client = OpenCloudClient("test-key")
     with pytest.raises(ValueError):
         client.get_luau_task("https://example.com/steal")
