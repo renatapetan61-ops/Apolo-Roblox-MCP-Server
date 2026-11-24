@@ -67,3 +67,7 @@ This gives APOLO a genuine Studio-free engine execution path for scripted checks
 ## Roblox Open Cloud asset uploads
 
 APOLO provides an initial multipart upload adapter through `apolo_upload_asset` and `apolo_get_asset_operation`. Supported upload categories and formats are constrained by the Roblox Assets API. Upload requires a source file in the project workspace, a creator user/group ID, `APOLO_ALLOW_ASSET_UPLOAD=true`, and `confirm_upload=true`. The API is asynchronous; poll the returned operation before using the resulting asset ID. See [Roblox asset usage guide](https://create.roblox.com/docs/cloud/guides/usage-assets).
+
+## DataStore APIs
+
+The Open Cloud adapter supports listing standard DataStores, listing entries, reading one entry and updating an existing entry. Configure the matching API key scopes: `universe-datastores.control:list`, `universe-datastores.objects:list`, `universe-datastores.objects:read`, and `universe-datastores.objects:update`. Writes require `APOLO_ALLOW_DATASTORE_WRITES=true` and `confirm_update=true`. Create/delete operations are not exposed yet. See [Roblox's Open Cloud DataStore guide](https://create.roblox.com/docs/cloud/guides/data-stores) and [scope reference](https://create.roblox.com/docs/cloud/reference/scopes).
