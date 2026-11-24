@@ -72,11 +72,12 @@ jobs:
         id: publish
         env:
           ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          UNIVERSE_ID: ${{ inputs.universe_id }}
           PLACE_ID: ${{ inputs.place_id }}
         run: |
           test -n "$ROBLOX_API_KEY"
           curl --fail-with-body --silent --show-error \
-            "https://apis.roblox.com/cloud/v2/universes/${{ inputs.universe_id }}/places/$PLACE_ID" \
+            "https://apis.roblox.com/cloud/v2/universes/$UNIVERSE_ID/places/$PLACE_ID" \
             -H "x-api-key: $ROBLOX_API_KEY" > place-metadata.json
           if [[ "$PLACE_ID" =~ ^[0-9]+$ ]] && file approved-place | grep -q XML; then
             MIME="application/xml"
