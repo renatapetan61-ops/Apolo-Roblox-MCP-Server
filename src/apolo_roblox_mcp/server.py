@@ -22,7 +22,8 @@ from .build import build_place
 settings = Settings.from_env()
 mcp = FastMCP("APOLO Roblox MCP Server")
 _selected_mode = settings.default_integration
-_publish_candidates: dict[str, dict] = {}\n_luau_tasks: dict[str, dict] = {}
+_publish_candidates: dict[str, dict] = {}
+_luau_tasks: dict[str, dict] = {}
 
 CAPABILITIES = {
     "studio_compat": [
