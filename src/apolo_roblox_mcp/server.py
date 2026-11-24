@@ -116,7 +116,7 @@ def apolo_list_capabilities() -> dict:
         ],
         "planned": {
             "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
-            "open_cloud": ["asset.operations", "datastores"],
+            "open_cloud": ["datastores", "asset.metadata_and_versions"],
             "assets": ["thumbnail", "icon", "gui", "hud", "avatar", "model3d",
                        "clothing", "music", "sound_effect", "r15_animation", "asset_library"],
         },
