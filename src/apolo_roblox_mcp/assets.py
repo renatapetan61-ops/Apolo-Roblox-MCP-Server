@@ -21,6 +21,10 @@ def import_asset(root: Path, project: str, source_path: str, category: str, name
     source = Path(source_path).expanduser().resolve()
     if not source.is_file():
         raise FileNotFoundError(source_path)
+    try:
+        source.relative_to(root.resolve())
+    except ValueError as exc:
+        raise ValueError("Import files must first be placed inside the configured APOLO workspace.") from exc
     if source.stat().st_size > 50 * 1024 * 1024:
         raise ValueError("Asset exceeds the 50 MiB import limit.")
     base, library = _paths(root, project)
