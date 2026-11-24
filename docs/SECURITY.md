@@ -11,3 +11,8 @@
 - Do not allow pull requests from forks to access production secrets.
 - Do not claim a place is live solely because an upload request was accepted; record and verify the Roblox response/version.
 - Revoke keys that may have been exposed and rotate them immediately.
+
+
+## Direct MCP publication
+
+Direct publication through the MCP tool is disabled by default. The safer recommended path is the `roblox-production` GitHub Environment with required reviewers, immutable artifact SHA-256 verification, and Roblox operation polling. Release candidates in the current MCP server process are in-memory and are lost on restart. Do not enable `APOLO_ALLOW_DIRECT_PUBLISH=true` in shared or unattended environments; if enabled for a controlled local session, the operator remains responsible for reviewing the exact target and release hash.
