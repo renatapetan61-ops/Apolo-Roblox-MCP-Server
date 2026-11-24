@@ -63,3 +63,7 @@ Important engine constraints from Roblox:
 - Maximum ten incomplete tasks per place; Roblox rate limits task creation.
 
 This gives APOLO a genuine Studio-free engine execution path for scripted checks and procedural analysis. It does not replace full interactive playtesting or guarantee that a live multiplayer session behaves correctly.
+
+## Roblox Open Cloud asset uploads
+
+APOLO provides an initial multipart upload adapter through `apolo_upload_asset` and `apolo_get_asset_operation`. Supported upload categories and formats are constrained by the Roblox Assets API. Upload requires a source file in the project workspace, a creator user/group ID, `APOLO_ALLOW_ASSET_UPLOAD=true`, and `confirm_upload=true`. The API is asynchronous; poll the returned operation before using the resulting asset ID. See [Roblox asset usage guide](https://create.roblox.com/docs/cloud/guides/usage-assets).
