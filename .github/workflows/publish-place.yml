@@ -3,24 +3,29 @@ name: Publish Roblox Place (approval required)
 on:
   workflow_dispatch:
     inputs:
-      artifact_url:
-        description: HTTPS URL to the reviewed .rbxl or .rbxlx artifact
+      artifact_run_id:
+        description: Successful GitHub Actions run ID containing the reviewed place artifact
+        required: true
+        type: string
+      artifact_name:
+        description: Exact GitHub Actions artifact name
         required: true
         type: string
       universe_id:
-        description: Roblox Universe ID
+        description: Roblox Universe ID (used for audit/target confirmation)
         required: true
         type: string
       place_id:
-        description: Roblox Place ID
+        description: Roblox Place ID to update
         required: true
         type: string
       release_sha256:
-        description: SHA-256 of the exact approved artifact
+        description: SHA-256 of the exact approved .rbxl or .rbxlx file
         required: true
         type: string
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -28,31 +33,81 @@ jobs:
     runs-on: ubuntu-latest
     environment: roblox-production
     steps:
-      - name: Validate release approval inputs
+      - name: Validate release inputs
         env:
-          ARTIFACT_URL: ${{ inputs.artifact_url }}
+          RUN_ID: ${{ inputs.artifact_run_id }}
           EXPECTED_SHA256: ${{ inputs.release_sha256 }}
-        run: |
-          case "$ARTIFACT_URL" in https://*) ;; *) echo "Only HTTPS artifact URLs are allowed"; exit 1;; esac
-          echo "$EXPECTED_SHA256" | grep -Eq '^[a-fA-F0-9]{64}$'
-      - name: Download approved place
-        env:
-          ARTIFACT_URL: ${{ inputs.artifact_url }}
-        run: |
-          curl --fail --location --proto '=https' --tlsv1.2 "$ARTIFACT_URL" -o place-file
-          file place-file
-      - name: Verify approved hash
-        env:
-          EXPECTED_SHA256: ${{ inputs.release_sha256 }}
-        run: echo "$EXPECTED_SHA256  place-file" | sha256sum --check
-      - name: Publish approved place
-        env:
-          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
           UNIVERSE_ID: ${{ inputs.universe_id }}
           PLACE_ID: ${{ inputs.place_id }}
         run: |
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$UNIVERSE_ID" =~ ^[0-9]+$ ]]
+          [[ "$PLACE_ID" =~ ^[0-9]+$ ]]
+          [[ "$EXPECTED_SHA256" =~ ^[a-fA-F0-9]{64}$ ]]
+
+      - name: Download artifact from this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.artifact_run_id }}
+          ARTIFACT_NAME: ${{ inputs.artifact_name }}
+        run: |
+          mkdir -p artifacts
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir artifacts
+          mapfile -t files < <(find artifacts -type f \( -name '*.rbxl' -o -name '*.rbxlx' \))
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "Expected exactly one .rbxl or .rbxlx file; found ${#files[@]}"
+            exit 1
+          fi
+          cp "${files[0]}" approved-place
+
+      - name: Verify exact approved artifact
+        env:
+          EXPECTED_SHA256: ${{ inputs.release_sha256 }}
+        run: echo "$EXPECTED_SHA256  approved-place" | sha256sum --check
+
+      - name: Submit place to Roblox Assets API
+        id: publish
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          PLACE_ID: ${{ inputs.place_id }}
+        run: |
           test -n "$ROBLOX_API_KEY"
-          case "$PLACE_ID:$UNIVERSE_ID" in *[!0-9:]*|'') echo "Invalid Roblox IDs"; exit 1;; esac
-          case "$(file -b place-file)" in *XML*) CONTENT_TYPE="application/xml";;
-            *) CONTENT_TYPE="application/octet-stream";; esac
-          curl --fail-with-body --location             "https://apis.roblox.com/universes/v1/$UNIVERSE_ID/places/$PLACE_ID/versions?versionType=Published"             -H "x-api-key: $ROBLOX_API_KEY"             -H "Content-Type: $CONTENT_TYPE"             --data-binary @place-file
+          if [[ "$PLACE_ID" =~ ^[0-9]+$ ]] && file approved-place | grep -q XML; then
+            MIME="application/xml"
+          else
+            MIME="application/octet-stream"
+          fi
+          curl --fail-with-body --silent --show-error --request PATCH \
+            "https://apis.roblox.com/assets/v1/assets/$PLACE_ID" \
+            -H "x-api-key: $ROBLOX_API_KEY" \
+            -F "request={\"assetId\":$PLACE_ID,\"assetType\":\"Place\",\"published\":true};type=application/json" \
+            -F "fileContent=@approved-place;type=$MIME" > publish-response.json
+          cat publish-response.json
+          OPERATION_PATH="$(jq -r '.path // empty' publish-response.json)"
+          test -n "$OPERATION_PATH"
+          echo "operation_id=${OPERATION_PATH##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify asynchronous publication
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          OPERATION_ID: ${{ steps.publish.outputs.operation_id }}
+        run: |
+          for attempt in $(seq 1 30); do
+            curl --fail-with-body --silent --show-error \
+              "https://apis.roblox.com/assets/v1/operations/$OPERATION_ID" \
+              -H "x-api-key: $ROBLOX_API_KEY" > operation.json
+            cat operation.json
+            DONE="$(jq -r '.done // false' operation.json)"
+            if [ "$DONE" = "true" ]; then
+              PUBLISHED="$(jq -r '.response.isPublished // false' operation.json)"
+              if [ "$PUBLISHED" = "true" ]; then
+                echo "Roblox confirms the place is published."
+                exit 0
+              fi
+              echo "Roblox operation completed without confirming publication."
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for Roblox publication operation; check Creator Dashboard and operation ID."
+          exit 1
