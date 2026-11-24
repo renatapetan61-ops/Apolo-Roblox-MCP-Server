@@ -11,6 +11,11 @@ from mcp.server.fastmcp import FastMCP
 from .config import Settings
 from .open_cloud import OpenCloudClient
 from .workspace import create_project, list_files, safe_path, write_text
+from .worlds import build_world_manifest
+from .ui import create_ui_spec
+from .assets import import_asset, list_assets, export_assets
+from .luau import validate_luau
+from .agents import plan_game
 
 settings = Settings.from_env()
 mcp = FastMCP("APOLO Roblox MCP Server")
@@ -66,7 +71,7 @@ def apolo_list_capabilities() -> dict:
     return {
         "implemented": [
             "server.info", "integration.select", "project.scaffold",
-            "project.inspect", "luau.write", "project.package",
+            "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",\n            "asset.library", "luau.validate", "game.plan",
             "cloud.place.publish_with_approval",
         ],
         "planned": {
@@ -183,6 +188,63 @@ def apolo_publish_approved(candidate_id: str, approval_phrase: str) -> dict:
         "sha256": candidate["sha256"],
         "roblox": result,
     }
+
+
+
+@mcp.tool()
+def apolo_generate_world(project: str, name: str, description: str, theme: str,
+                         size: str, objects: list[dict]) -> dict:
+    """Generate a validated declarative world/map manifest in the selected Studio-compatible project."""
+    if _selected_mode != "studio_compat":
+        raise RuntimeError("Select studio_compat to generate project world manifests.")
+    return build_world_manifest(settings.workspace, project, name, description, theme, size, objects)
+
+
+@mcp.tool()
+def apolo_generate_ui_spec(project: str, screen_name: str, purpose: str,
+                           palette: dict, components: list[dict]) -> dict:
+    """Generate a Roblox UI design specification. This creates a spec, not a live ScreenGui."""
+    if _selected_mode != "studio_compat":
+        raise RuntimeError("Select studio_compat to generate UI specifications.")
+    return create_ui_spec(settings.workspace, project, screen_name, purpose, palette, components)
+
+
+@mcp.tool()
+def apolo_validate_luau(project: str, path: str) -> dict:
+    """Run luau-analyze or luau-compile if installed; otherwise report validation as skipped."""
+    if _selected_mode != "studio_compat":
+        raise RuntimeError("Select studio_compat to validate local Luau files.")
+    return validate_luau(settings.workspace, project, path)
+
+
+@mcp.tool()
+def apolo_import_asset(project: str, source_path: str, category: str, name: str) -> dict:
+    """Import a user-provided asset file into the project's local asset library; does not upload to Roblox."""
+    if _selected_mode != "studio_compat":
+        raise RuntimeError("Select studio_compat to manage the local asset library.")
+    return import_asset(settings.workspace, project, source_path, category, name)
+
+
+@mcp.tool()
+def apolo_list_assets(project: str) -> dict:
+    """List assets imported into the local project library."""
+    if _selected_mode != "studio_compat":
+        raise RuntimeError("Select studio_compat to inspect the local asset library.")
+    return {"assets": list_assets(settings.workspace, project)}
+
+
+@mcp.tool()
+def apolo_export_assets(project: str) -> dict:
+    """Export the local asset library to a ZIP archive with a SHA-256 digest."""
+    if _selected_mode != "studio_compat":
+        raise RuntimeError("Select studio_compat to export local assets.")
+    return export_assets(settings.workspace, project)
+
+
+@mcp.tool()
+def apolo_plan_game(brief: str, genre: str, target: str, constraints: list[str]) -> dict:
+    """Create an AI-agent task graph for a game brief; the connected AI client orchestrates execution."""
+    return plan_game(brief, genre, target, constraints)
 
 
 def main() -> None:
