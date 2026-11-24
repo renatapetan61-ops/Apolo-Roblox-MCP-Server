@@ -13,7 +13,7 @@ class FakeResponse:
         return False
 
     def read(self):
-        return b'{"path":"operations/op-123"}'
+        return b'{"path":"universes/123/places/456/versions/7/luau-execution-sessions/session-8/tasks/task-9","state":"QUEUED"}'
 
 
 def test_publish_uses_current_assets_api(monkeypatch, tmp_path: Path):
@@ -35,7 +35,7 @@ def test_publish_uses_current_assets_api(monkeypatch, tmp_path: Path):
     assert b'"assetType":"Place"' in captured["body"]
     assert b'"published":true' in captured["body"]
     assert b"<roblox/>" in captured["body"]
-    assert result["response"]["path"] == "operations/op-123"
+    assert result["response"]["path"] == "universes/123/places/456/versions/7/luau-execution-sessions/session-8/tasks/task-9"
 
 
 def test_create_luau_task_uses_headless_open_cloud(monkeypatch):
@@ -53,3 +53,30 @@ def test_create_luau_task_uses_headless_open_cloud(monkeypatch):
     assert captured["method"] == "POST"
     assert json.loads(captured["body"]) == {"script": "return 42", "timeout": "60s"}
     assert result["response"]["path"] == "operations/op-123"
+
+def test_luau_task_get_and_logs_use_roblox_resource_path(monkeypatch):
+    calls = []
+    path = "universes/123/places/456/versions/7/luau-execution-sessions/session-8/tasks/task-9"
+
+    def fake_urlopen(request, timeout):
+        calls.append(request.full_url)
+        return FakeResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    client = OpenCloudClient("test-key")
+    client.get_luau_task(path)
+    client.get_luau_task_logs(path)
+    assert calls == [
+        "https://apis.roblox.com/cloud/v2/" + path,
+        "https://apis.roblox.com/cloud/v2/" + path + "/logs",
+    ]
+
+
+def test_luau_task_path_rejects_arbitrary_paths():
+    import pytest
+
+    client = OpenCloudClient("test-key")
+    with pytest.raises(ValueError):
+        client.get_luau_task("https://example.com/steal")
+    with pytest.raises(ValueError):
+        client.get_luau_task("universes/1/places/2/../../secrets")
