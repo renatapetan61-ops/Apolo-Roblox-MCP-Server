@@ -18,7 +18,8 @@ Updated as implementation proceeds. A capability is not "complete" until code, t
 | Open Cloud place publishing | Initial current Assets API adapter | Multipart Update Asset, async operation polling; requires asset read/write permission and valid .rbxl/.rbxlx; not tested against live Roblox |
 | Open Cloud asset upload | Initial adapter, live test pending | Multipart upload for Images, Decals, Models, Audio and Animation; 20 MiB limit, explicit confirmation and async operation polling |
 | Open Cloud DataStores | Initial read/update adapters, live test pending | List stores, list entries, read entries and update existing entries; write requires explicit opt-in; create/delete remain pending |
-| AI image assets | Initial OpenAI Images provider | PNG generation for icons, thumbnails, UI art and textures; explicit billing/confirmation gate |\n| 3D meshes / clothing / audio / animation generation | Pending provider adapters | Requires modality-specific providers and file validation |
+| AI image assets | Initial OpenAI Images provider | PNG generation for icons, thumbnails, UI art and textures; explicit billing/confirmation gate |
+| 3D meshes / clothing / audio / animation generation | Pending provider adapters | Requires modality-specific providers and file validation |
 | Multi-agent orchestration | Initial persistent runtime | SQLite task DAG, specialist roles, dependency handoffs, worker leases and retry handling; connected MCP clients are the workers, no model spawning yet |
 | Manual / approved publishing | Initial | Manual Creator Dashboard handoff documented; GitHub workflow now downloads an artifact from this repo, verifies SHA-256, submits and polls the current Assets API. Configure protected environment reviewers before use |
 
