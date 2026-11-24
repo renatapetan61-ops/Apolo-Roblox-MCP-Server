@@ -118,6 +118,64 @@ class OpenCloudClient:
         self._validate_luau_task_path(task_path)
         return self._request("GET", "https://apis.roblox.com/cloud/v2/" + task_path + "/logs")
 
+
+    def create_asset(self, asset_type: str, asset_file: Path, display_name: str,
+                     description: str, creator_type: str, creator_id: str) -> dict:
+        """Create one Roblox asset through the Open Cloud Assets API."""
+        if creator_type not in {"user", "group"} or not creator_id.isdigit():
+            raise ValueError("creator_type must be 'user' or 'group' and creator_id must be numeric.")
+        if not display_name.strip() or len(display_name) > 100:
+            raise ValueError("Asset display_name must contain 1-100 characters.")
+        if len(description) > 1000:
+            raise ValueError("Asset description must not exceed 1000 characters.")
+        if not asset_file.is_file():
+            raise FileNotFoundError(str(asset_file))
+        if asset_file.stat().st_size > 20 * 1024 * 1024:
+            raise ValueError("Roblox Assets API content uploads are limited to 20 MiB per asset.")
+
+        supported = {
+            "Image": {".png", ".jpg", ".jpeg", ".bmp", ".tga"},
+            "Decal": {".png", ".jpg", ".jpeg", ".bmp", ".tga"},
+            "Model": {".fbx", ".gltf", ".glb", ".rbxm", ".rbxmx"},
+            "Audio": {".mp3", ".ogg", ".wav", ".flac"},
+            "Animation": {".rbxm", ".rbxmx"},
+            "Video": {".mp4", ".mov"},
+        }
+        suffix = asset_file.suffix.lower()
+        if asset_type not in supported or suffix not in supported[asset_type]:
+            raise ValueError(f"Unsupported file extension {suffix!r} for Roblox asset type {asset_type!r}.")
+        content_types = {
+            ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".bmp": "image/bmp", ".tga": "image/tga",
+            ".fbx": "model/fbx", ".gltf": "model/gltf+json",
+            ".glb": "model/gltf-binary", ".rbxm": "model/x-rbxm",
+            ".rbxmx": "model/x-rbxm", ".mp3": "audio/mpeg",
+            ".ogg": "audio/ogg", ".wav": "audio/wav", ".flac": "audio/flac",
+            ".mp4": "video/mp4", ".mov": "video/mov",
+        }
+        creator_field = "userId" if creator_type == "user" else "groupId"
+        metadata = {
+            "assetType": asset_type,
+            "displayName": display_name.strip(),
+            "description": description,
+            "creationContext": {"creator": {creator_field: creator_id}},
+        }
+        boundary = "----APOLO" + secrets.token_hex(16)
+        filename = asset_file.name.replace('"', "").replace("\\r", "").replace("\\n", "")
+        body = (
+            f"--{boundary}\\r\\n"
+            'Content-Disposition: form-data; name="request"\\r\\n'
+            "Content-Type: application/json\\r\\n\\r\\n"
+            f"{json.dumps(metadata, separators=(',', ':'))}\\r\\n"
+            f"--{boundary}\\r\\n"
+            f'Content-Disposition: form-data; name="fileContent"; filename="{filename}"\\r\\n'
+            f"Content-Type: {content_types[suffix]}\\r\\n\\r\\n"
+        ).encode() + asset_file.read_bytes() + f"\\r\\n--{boundary}--\\r\\n".encode()
+        return self._request(
+            "POST", "https://apis.roblox.com/assets/v1/assets", body,
+            {"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        )
+
     def get_operation(self, operation_id: str) -> dict:
         if not operation_id or "/" in operation_id or ".." in operation_id:
             raise ValueError("Invalid Roblox operation ID.")
