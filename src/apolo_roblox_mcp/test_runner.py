@@ -88,7 +88,7 @@ def build_game_test_script(tests: list[dict[str, Any]]) -> str:
             if not isinstance(expected, int) or isinstance(expected, bool) or not 0 <= expected <= 100000:
                 raise GameTestSpecError("child_count expected must be an integer from 0 to 100000.")
             lines.append(
-                f"record({id_lua}, {variable} ~= nil and #{{{variable}:GetChildren()}} == {expected}, "
+                f"record({id_lua}, {variable} ~= nil and #({variable}:GetChildren()) == {expected}, "
                 f"{_lua('Expected child count ' + str(expected) + ' at ' + spec['path'])})"
             )
         elif kind == "property_equals":
@@ -139,6 +139,9 @@ def summarize_task(task_response: dict) -> dict:
         outcome = "failed"
     elif state == "CANCELLED":
         outcome = "cancelled"
+    elif state == "COMPLETE":
+        outcome = "failed"
+        error = error or {"message": "Roblox task completed without a structured test summary."}
     else:
         outcome = "running"
     return {
