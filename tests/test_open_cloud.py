@@ -36,3 +36,20 @@ def test_publish_uses_current_assets_api(monkeypatch, tmp_path: Path):
     assert b'"published":true' in captured["body"]
     assert b"<roblox/>" in captured["body"]
     assert result["response"]["path"] == "operations/op-123"
+
+
+def test_create_luau_task_uses_headless_open_cloud(monkeypatch):
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["method"] = request.method
+        captured["body"] = request.data
+        return FakeResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    result = OpenCloudClient("test-key").create_luau_task("123", "456", "return 42", 60)
+    assert captured["url"].endswith("/universes/123/places/456/luau-execution-session-tasks")
+    assert captured["method"] == "POST"
+    assert json.loads(captured["body"]) == {"script": "return 42", "timeout": "60s"}
+    assert result["response"]["path"] == "operations/op-123"
