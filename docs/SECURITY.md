@@ -16,3 +16,10 @@
 ## Direct MCP publication
 
 Direct publication through the MCP tool is disabled by default. The safer recommended path is the `roblox-production` GitHub Environment with required reviewers, immutable artifact SHA-256 verification, and Roblox operation polling. Release candidates in the current MCP server process are in-memory and are lost on restart. Do not enable `APOLO_ALLOW_DIRECT_PUBLISH=true` in shared or unattended environments; if enabled for a controlled local session, the operator remains responsible for reviewing the exact target and release hash.
+
+## World materialization and place saving
+
+- Headless world materialization is disabled until `APOLO_ALLOW_LUAU_EXECUTION=true` and each call explicitly confirms execution.
+- Saving is a separate opt-in: `APOLO_ALLOW_PLACE_SAVE=true`, `save_place=true` and `confirm_save_place=true` are all required.
+- Save operations use `SaveWithoutPublish=true`, but they still overwrite the saved state of the target place. Use a dedicated test place and verify rollback before enabling this flag.
+- Roblox may reject SavePlaceAsync unless the place was created with CreatePlaceAsync or has the relevant API enabled in its place settings.
