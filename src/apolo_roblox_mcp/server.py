@@ -19,6 +19,7 @@ from .luau import validate_luau
 from .open_cloud import OpenCloudClient
 from .test_runner import build_game_test_script, summarize_task
 from .ui import create_ui_spec
+from .world_runtime import build_world_materialization_script
 from .workspace import create_project, list_files, safe_path, write_text
 from .worlds import build_world_manifest
 
@@ -60,7 +61,7 @@ CAPABILITIES = {
     "open_cloud": [
         "cloud.place.publish", "cloud.place.metadata", "cloud.publish.operation_status",
         "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run",
-        "cloud.game_tests.results",
+        "cloud.game_tests.results", "cloud.world.materialize",
     ],
 }
 
@@ -104,7 +105,7 @@ def apolo_list_capabilities() -> dict:
             "server.info", "integration.select", "project.scaffold",
             "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",
             "asset.library", "luau.validate", "game.plan", "project.build",
-            "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results",
+            "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status", "cloud.luau.execute", "cloud.luau.task_status", "cloud.game_tests.run", "cloud.game_tests.results", "cloud.world.materialize",
         ],
         "planned": {
             "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
@@ -398,6 +399,56 @@ def apolo_run_game_tests(universe_id: str, place_id: str, tests: list[dict],
         "resource_path": resource, "roblox": result,
         "next_step": "Call apolo_get_game_test_results with this task_id until outcome is passed or failed.",
         "warning": "Tests execute against the selected published place version. Avoid destructive DataStore writes; use a dedicated test universe.",
+    }
+
+
+@mcp.tool()
+def apolo_materialize_world(universe_id: str, place_id: str, name: str,
+                            objects: list[dict],
+                            terrain_blocks: list[dict] | None = None,
+                            lighting: dict | None = None,
+                            save_place: bool = False,
+                            confirm_save_place: bool = False,
+                            confirm_live_execution: bool = False,
+                            timeout_seconds: int = 300) -> dict:
+    """Create actual Roblox Parts, grouped Models, Terrain blocks and Lighting through headless Luau Execution."""
+    if _selected_mode != "open_cloud":
+        raise RuntimeError("Select open_cloud before materializing a Roblox world.")
+    if not confirm_live_execution or os.getenv("APOLO_ALLOW_LUAU_EXECUTION", "false").lower() != "true":
+        raise PermissionError("Cloud world materialization is disabled. Set APOLO_ALLOW_LUAU_EXECUTION=true and explicitly confirm this invocation.")
+    if save_place and (
+        not confirm_save_place
+        or os.getenv("APOLO_ALLOW_PLACE_SAVE", "false").lower() != "true"
+    ):
+        raise PermissionError("Saving the place is separately disabled. Set APOLO_ALLOW_PLACE_SAVE=true and confirm_save_place=true; saving is not publishing.")
+    if confirm_save_place and not save_place:
+        raise ValueError("confirm_save_place is only valid when save_place=true.")
+    if not settings.roblox_api_key:
+        raise RuntimeError("ROBLOX_API_KEY is not configured.")
+    build = build_world_materialization_script(
+        name, objects, terrain_blocks=terrain_blocks, lighting=lighting, save_place=save_place
+    )
+    result = OpenCloudClient(settings.roblox_api_key).create_luau_task(
+        universe_id, place_id, build["script"], timeout_seconds
+    )
+    resource = result.get("response", {}).get("path")
+    if not resource:
+        return {"accepted": False, "reason": "Roblox response did not include a task resource path.", "roblox": result}
+    task_id = resource.rsplit("/", 1)[-1]
+    _persist_luau_task(task_id, {
+        "path": resource, "universe_id": universe_id, "place_id": place_id,
+        "kind": "world_materialization", "world_name": build["world_name"],
+        "object_count": build["object_count"],
+        "terrain_block_count": build["terrain_block_count"],
+        "save_place_requested": save_place, "created_at": time.time(),
+    })
+    return {
+        "accepted": True, "task_id": task_id, "world_name": build["world_name"],
+        "object_count": build["object_count"],
+        "terrain_block_count": build["terrain_block_count"],
+        "save_place_requested": save_place, "resource_path": resource, "roblox": result,
+        "next_step": "Poll apolo_get_luau_task and apolo_get_luau_task_logs using this task_id.",
+        "warning": "This changes the DataModel in the execution task. Persistence requires SavePlaceAsync to be enabled for this place; SaveWithoutPublish=true is used and does not publish the place.",
     }
 
 
