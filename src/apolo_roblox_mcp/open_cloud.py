@@ -161,16 +161,16 @@ class OpenCloudClient:
             "creationContext": {"creator": {creator_field: creator_id}},
         }
         boundary = "----APOLO" + secrets.token_hex(16)
-        filename = asset_file.name.replace('"', "").replace("\\r", "").replace("\\n", "")
+        filename = asset_file.name.replace('"', "").replace("\r", "").replace("\n", "")
         body = (
-            f"--{boundary}\\r\\n"
-            'Content-Disposition: form-data; name="request"\\r\\n'
-            "Content-Type: application/json\\r\\n\\r\\n"
-            f"{json.dumps(metadata, separators=(',', ':'))}\\r\\n"
-            f"--{boundary}\\r\\n"
-            f'Content-Disposition: form-data; name="fileContent"; filename="{filename}"\\r\\n'
-            f"Content-Type: {content_types[suffix]}\\r\\n\\r\\n"
-        ).encode() + asset_file.read_bytes() + f"\\r\\n--{boundary}--\\r\\n".encode()
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="request"\r\n'
+            "Content-Type: application/json\r\n\r\n"
+            f"{json.dumps(metadata, separators=(',', ':'))}\r\n"
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="fileContent"; filename="{filename}"\r\n'
+            f"Content-Type: {content_types[suffix]}\r\n\r\n"
+        ).encode() + asset_file.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
         return self._request(
             "POST", "https://apis.roblox.com/assets/v1/assets", body,
             {"Content-Type": f"multipart/form-data; boundary={boundary}"},
