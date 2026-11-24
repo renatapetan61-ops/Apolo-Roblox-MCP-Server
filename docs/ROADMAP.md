@@ -34,7 +34,7 @@ Legend: [x] implemented in code, [~] partial / adapter or integration pending, [
 - [~] Credential and scope diagnostics (real API key and permissions required)
 - [ ] General asset create/update and thumbnail management
 - [ ] DataStore / MemoryStore operations
-- [ ] Luau Execution API integration and remote test runner
+- [x] Headless Luau Execution API task submission, status and logs (gated; live test pending)\n- [ ] Remote test runner with TestEZ and reproducible test fixtures
 
 ## Phase 4 — ForgeGUI-inspired creation suite
 - [~] Local asset library, import, catalog and ZIP export
