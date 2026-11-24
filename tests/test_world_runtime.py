@@ -35,7 +35,7 @@ def test_builds_real_world_materialization_script():
 def test_rejects_injected_names_and_invalid_materials():
     result = build_world_materialization_script(
         "Map; error('bad')",
-        [{"name": "ok", "material": "NotARealMaterial"}],
+        [{"name": "ok", "material": "Plastic"}],
     )
     assert result["world_name"] == "Map errorbad"
     with pytest.raises(WorldMaterializationError):
