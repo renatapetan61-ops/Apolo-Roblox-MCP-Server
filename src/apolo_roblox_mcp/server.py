@@ -73,12 +73,13 @@ def apolo_list_capabilities() -> dict:
     return {
         "implemented": [
             "server.info", "integration.select", "project.scaffold",
-            "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",\n            "asset.library", "luau.validate", "game.plan", "project.build",
+            "project.inspect", "luau.write", "project.package", "world.manifest", "ui.spec",
+            "asset.library", "luau.validate", "game.plan", "project.build",
             "cloud.place.publish_with_approval", "cloud.place.metadata", "cloud.publish.operation_status",
         ],
         "planned": {
-            "studio_compat": ["luau.validate", "world.manifest", "ui.spec", "live.playtest"],
-            "open_cloud": ["place.metadata", "asset.operations", "datastores"],
+            "studio_compat": ["live.playtest", "terrain.generator", "mesh.generator"],
+            "open_cloud": ["asset.operations", "datastores", "luau.execution"],
             "assets": ["thumbnail", "icon", "gui", "hud", "avatar", "model3d",
                        "clothing", "music", "sound_effect", "r15_animation", "asset_library"],
         },
