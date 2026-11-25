@@ -170,14 +170,14 @@ async function authenticatedPost(url, body) {
 // Requer uma API Key com legacy-universe:manage e universe:read.
 async function makeUniversePublic(universeId) {
     if (!ROBLOX_API_KEY) {
-        console.error("\\nERRO: ROBLOX_API_KEY não foi carregada.");
+        console.error("\nERRO: ROBLOX_API_KEY não foi carregada.");
         console.error("A Experience foi criada, mas não foi possível solicitar a publicação automática.");
         console.error("Configure uma API Key Roblox com legacy-universe:manage e universe:read.");
         return false;
     }
 
     const activateUrl = `${API_BASE}/legacy-develop/v1/universes/${universeId}/activate`;
-    console.log("\\nSolicitando que a Experience fique PUBLICA...");
+    console.log("\nSolicitando que a Experience fique PUBLICA...");
 
     let activationStatus = null;
     let activationText = "";
@@ -208,18 +208,21 @@ async function makeUniversePublic(universeId) {
         try { universe = JSON.parse(verifyText); } catch {}
 
         if (verify.ok && universe?.visibility === "PUBLIC") {
-            console.log("\\nCONFIRMADO: a Experience está PUBLICA.");
-            console.log(`Experience: https://www.roblox.com/games/${universeId}`);
+            console.log("\nCONFIRMADO: a Experience está PUBLICA.");
+            const rootPlaceId = universe.rootPlace?.split("/").pop();
+            if (rootPlaceId && /^\d+$/.test(rootPlaceId)) {
+                console.log(`Experience: https://www.roblox.com/games/${rootPlaceId}`);
+            }
             return true;
         }
 
-        console.error("\\nATENÇÃO: não foi possível confirmar a visibilidade PUBLICA.");
+        console.error("\nATENÇÃO: não foi possível confirmar a visibilidade PUBLICA.");
         console.error(`Verificação HTTP: ${verify.status}`);
         console.error(verifyText);
         console.error("Verifique a classificação etária/questionário de maturidade e as permissões da API Key no Creator Hub.");
         return false;
     } catch (error) {
-        console.error("\\nNão foi possível verificar a visibilidade:", error.message);
+        console.error("\nNão foi possível verificar a visibilidade:", error.message);
         console.error("Consulte a Experience no Creator Hub antes de compartilhar o link.");
         return false;
     }
@@ -264,10 +267,10 @@ async function createUniverse() {
             }
             const universeId = result.data?.universeId ?? result.data?.UniverseId ?? result.data?.universe?.id;
             if (universeId && /^\\d+$/.test(String(universeId))) {
-                console.log(`\\nUniverse ID: ${universeId}`);
+                console.log(`\nUniverse ID: ${universeId}`);
                 await makeUniversePublic(String(universeId));
             } else {
-                console.error("\\nA criação retornou sucesso, mas não encontrei o Universe ID na resposta.");
+                console.error("\nA criação retornou sucesso, mas não encontrei o Universe ID na resposta.");
                 console.error("Não foi possível ativar automaticamente a visibilidade pública.");
             }
         } else {
