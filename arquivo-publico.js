@@ -379,6 +379,9 @@ async function main() {
             await createPlace();
             break;
         case "3":
+            await activateExistingUniverse();
+            break;
+        case "4":
             console.log("\nSaindo...");
             break;
         default:
