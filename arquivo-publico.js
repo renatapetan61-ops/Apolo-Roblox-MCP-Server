@@ -266,7 +266,7 @@ async function createUniverse() {
                 console.log(JSON.stringify(result.data, null, 2));
             }
             const universeId = result.data?.universeId ?? result.data?.UniverseId ?? result.data?.universe?.id;
-            if (universeId && /^\\d+$/.test(String(universeId))) {
+            if (universeId && /^\d+$/.test(String(universeId))) {
                 console.log(`\nUniverse ID: ${universeId}`);
                 await makeUniversePublic(String(universeId));
             } else {
