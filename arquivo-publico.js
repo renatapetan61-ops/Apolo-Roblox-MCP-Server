@@ -342,6 +342,20 @@ async function createPlace() {
     }
 }
 
+// TORNAR PUBLICA UMA EXPERIENCE JA CRIADA
+async function activateExistingUniverse() {
+    console.log("");
+    console.log("========================================");
+    console.log("   TORNAR EXPERIENCE PUBLICA");
+    console.log("========================================");
+    const universeId = await question("\\nUniverse ID: ");
+    if (!/^\\d+$/.test(universeId)) {
+        console.log("\\nUniverse ID inválido.");
+        return;
+    }
+    await makeUniversePublic(universeId);
+}
+
 // MENU PRINCIPAL
 async function main() {
     console.clear();
@@ -352,7 +366,8 @@ async function main() {
     console.log("");
     console.log("1. Criar nova Experience");
     console.log("2. Criar Place em Experience existente");
-    console.log("3. Sair");
+    console.log("3. Tornar Experience existente pública");
+    console.log("4. Sair");
 
     const option = await question("\nEscolha uma opção: ");
 
