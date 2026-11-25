@@ -348,9 +348,9 @@ async function activateExistingUniverse() {
     console.log("========================================");
     console.log("   TORNAR EXPERIENCE PUBLICA");
     console.log("========================================");
-    const universeId = await question("\\nUniverse ID: ");
+    const universeId = await question("\nUniverse ID: ");
     if (!/^\\d+$/.test(universeId)) {
-        console.log("\\nUniverse ID inválido.");
+        console.log("\nUniverse ID inválido.");
         return;
     }
     await makeUniversePublic(universeId);
